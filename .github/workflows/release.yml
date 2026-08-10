@@ -179,25 +179,29 @@ jobs:
       # No --features flag: the default (empty) feature set excludes fm_probe
       # and fm_catalogue, so neither can be selected as the app binary.
       #
-      # Signing is opt-in. When the certificate secrets are absent these env
-      # vars are empty, Tauri skips signing, and the build still succeeds —
-      # an unsigned test build must never require credentials. Secret values
-      # are only ever passed through env, never echoed.
+      # Signing is opt-in. An unset GitHub secret expands to an EMPTY STRING,
+      # not to an absent variable — so the signing vars are staged under
+      # SECRET_* names and only re-exported under the names Tauri looks for
+      # when they actually hold a value. Exporting an empty
+      # TAURI_WINDOWS_CERTIFICATE_THUMBPRINT would make Tauri attempt to sign
+      # with nothing and fail the build.
+      #
+      # Secrets are passed through env only, never interpolated into a command
+      # line and never echoed.
       - name: Build NSIS installer
-        env:
-          TAURI_WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
-        run: npm run tauri build -- --target x86_64-pc-windows-msvc --bundles nsis
-
-      - name: Report signing status
         shell: bash
+        env:
+          SECRET_WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
         run: |
-          if [ -n "${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}" ]; then
-            echo "A Windows signing certificate was configured for this build."
-            echo "Verify with signtool before marking the artifact signed."
+          set -euo pipefail
+          if [ -n "${SECRET_WINDOWS_CERTIFICATE_THUMBPRINT:-}" ]; then
+            echo "Signing certificate configured — building signed."
+            export TAURI_WINDOWS_CERTIFICATE_THUMBPRINT="$SECRET_WINDOWS_CERTIFICATE_THUMBPRINT"
           else
             echo "UNSIGNED BUILD: no WINDOWS_CERTIFICATE_THUMBPRINT secret is set."
             echo "SmartScreen will warn users. See SIGNING.md."
           fi
+          npm run tauri build -- --target x86_64-pc-windows-msvc --bundles nsis
 
       - name: Rename to the stable Veytaro filename
         id: artifact
@@ -364,30 +368,48 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Signing and notarization are opt-in. With the secrets unset these env
-      # vars are empty, Tauri skips both, and the build still succeeds — an
-      # unsigned test build must never require Apple credentials. Values are
-      # only passed through env, never echoed.
+      # Signing and notarization are opt-in.
+      #
+      # An unset GitHub secret expands to an EMPTY STRING, not to an absent
+      # variable. Exporting an empty APPLE_CERTIFICATE makes Tauri run
+      # `security import` on nothing, which fails the whole build with
+      # "failed to import keychain certificate" — so the values are staged
+      # under SECRET_* names and only re-exported under the names Tauri reads
+      # once they actually hold something.
+      #
+      # Secrets are passed through env only, never interpolated into a command
+      # line and never echoed.
       - name: Build universal DMG
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: npm run tauri build -- --target universal-apple-darwin --bundles dmg
-
-      - name: Report signing status
         shell: bash
+        env:
+          SECRET_APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          SECRET_APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          SECRET_APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          SECRET_APPLE_ID: ${{ secrets.APPLE_ID }}
+          SECRET_APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          SECRET_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          if [ -n "${{ secrets.APPLE_SIGNING_IDENTITY }}" ]; then
-            echo "An Apple signing identity was configured for this build."
-            echo "Confirm with 'spctl -a -vvv -t install' before claiming notarization."
+          set -euo pipefail
+          if [ -n "${SECRET_APPLE_SIGNING_IDENTITY:-}" ]; then
+            echo "Apple signing identity configured — building signed."
+            export APPLE_CERTIFICATE="$SECRET_APPLE_CERTIFICATE"
+            export APPLE_CERTIFICATE_PASSWORD="$SECRET_APPLE_CERTIFICATE_PASSWORD"
+            export APPLE_SIGNING_IDENTITY="$SECRET_APPLE_SIGNING_IDENTITY"
+            # Notarization runs only when a full credential set is present.
+            if [ -n "${SECRET_APPLE_ID:-}" ] && [ -n "${SECRET_APPLE_PASSWORD:-}" ] \
+               && [ -n "${SECRET_APPLE_TEAM_ID:-}" ]; then
+              echo "Notarization credentials present."
+              export APPLE_ID="$SECRET_APPLE_ID"
+              export APPLE_PASSWORD="$SECRET_APPLE_PASSWORD"
+              export APPLE_TEAM_ID="$SECRET_APPLE_TEAM_ID"
+            else
+              echo "Signing without notarization: APPLE_ID/PASSWORD/TEAM_ID incomplete."
+            fi
           else
             echo "UNSIGNED BUILD: no APPLE_SIGNING_IDENTITY secret is set."
             echo "Gatekeeper will warn users. See SIGNING.md."
           fi
+          npm run tauri build -- --target universal-apple-darwin --bundles dmg
 
       - name: Rename to the stable Veytaro filename
         id: artifact
