@@ -431,43 +431,16 @@ jobs:
           cp "$src" "$out/$name"
           echo "name=$name" >> "$GITHUB_OUTPUT"
 
-      # `lipo -archs` only prints; on its own it would pass even for a
-      # single-architecture binary. Both slices are asserted explicitly.
-      - name: Verify the built app binary is universal
-        shell: bash
-        run: |
-          set -euo pipefail
-          app=$(find src-tauri/target/universal-apple-darwin/release/bundle/macos \
-                  -maxdepth 1 -name "*.app" | head -n 1)
-          [ -n "$app" ] || { echo "No .app bundle was produced" >&2; exit 1; }
-
-          bin="$app/Contents/MacOS/Veytaro"
-          [ -f "$bin" ] || { echo "Main binary missing at $bin" >&2; exit 1; }
-
-          archs=$(lipo -archs "$bin")
-          echo "lipo -archs: $archs"
-          for want in arm64 x86_64; do
-            case " $archs " in
-              *" $want "*) echo "  $want present" ;;
-              *) echo "  MISSING $want — this build is not universal" >&2; exit 1 ;;
-            esac
-          done
-
-          echo "--- Info.plist ---"
-          plist="$app/Contents/Info.plist"
-          for k in CFBundleName CFBundleIdentifier CFBundleShortVersionString LSMinimumSystemVersion; do
-            printf '%-30s %s\n' "$k" "$(/usr/libexec/PlistBuddy -c "Print :$k" "$plist" 2>/dev/null || echo '<unset>')"
-          done
-
-          echo "--- research binaries must be absent ---"
-          if find "$app/Contents/MacOS" -name 'fm_probe*' -o -name 'fm_catalogue*' | grep -q .; then
-            echo "Research binary shipped inside the .app" >&2
-            exit 1
-          fi
-          echo "none present"
-
-      # Structural inspection of the artifact users actually download.
-      - name: Mount the DMG and inspect its contents
+      # Everything is verified against the artifact users actually download.
+      #
+      # Not against the staging .app: with `--bundles dmg`, Tauri deletes
+      # `bundle/macos/Veytaro.app` once the DMG is built ("Cleaning …app" in the
+      # log), so nothing is left on disk to inspect. Reading the mounted image
+      # is both the only option and the stronger evidence.
+      #
+      # `lipo -archs` only prints and exits 0 even for a single-architecture
+      # binary, so both slices are asserted explicitly.
+      - name: Mount the DMG and verify its contents
         shell: bash
         working-directory: dist-release
         run: |
@@ -494,24 +467,47 @@ jobs:
           [ -d "$app" ] || { echo "Veytaro.app not found inside the DMG" >&2; exit 1; }
           echo "Veytaro.app present inside the DMG"
 
-          [ -L "$mnt/Applications" ] && echo "/Applications drop target present"
+          if [ -L "$mnt/Applications" ]; then
+            echo "/Applications drop target present"
+          else
+            echo "WARNING: no /Applications symlink — drag-to-install will not work"
+          fi
 
-          archs=$(lipo -archs "$app/Contents/MacOS/Veytaro")
-          echo "archs inside DMG: $archs"
+          bin="$app/Contents/MacOS/Veytaro"
+          [ -f "$bin" ] || { echo "Main binary missing at $bin" >&2; exit 1; }
+
+          archs=$(lipo -archs "$bin")
+          echo "--- lipo -archs: $archs ---"
           for want in arm64 x86_64; do
             case " $archs " in
-              *" $want "*) ;;
-              *) echo "MISSING $want inside the shipped DMG" >&2; exit 1 ;;
+              *" $want "*) echo "  $want present" ;;
+              *) echo "  MISSING $want — the shipped DMG is not universal" >&2; exit 1 ;;
             esac
+          done
+          lipo -detailed_info "$bin" | grep -E 'architecture|cputype' || true
+
+          echo "--- Info.plist ---"
+          plist="$app/Contents/Info.plist"
+          for k in CFBundleName CFBundleIdentifier CFBundleShortVersionString LSMinimumSystemVersion; do
+            printf '%-30s %s\n' "$k" \
+              "$(/usr/libexec/PlistBuddy -c "Print :$k" "$plist" 2>/dev/null || echo '<unset>')"
           done
 
           res="$app/Contents/Resources/resources/competition_names/fm26.json"
           [ -f "$res" ] || { echo "Bundled catalogue missing at $res" >&2; exit 1; }
           echo "bundled catalogue present"
 
-          echo "--- codesign / Gatekeeper (informational) ---"
+          echo "--- research binaries must be absent ---"
+          if find "$app/Contents" \( -name 'fm_probe*' -o -name 'fm_catalogue*' \) | grep -q .; then
+            echo "Research binary shipped inside the .app" >&2
+            exit 1
+          fi
+          echo "none present"
+
+          echo "--- codesign / Gatekeeper (informational, not a gate) ---"
           codesign -dv --verbose=2 "$app" 2>&1 | head -20 || echo "not signed"
-          spctl -a -vvv -t install "$app" 2>&1 | head -5 || echo "Gatekeeper: rejected (expected while unsigned)"
+          spctl -a -vvv -t install "$app" 2>&1 | head -5 \
+            || echo "Gatekeeper: rejected — expected while unsigned"
 
       - name: Generate SHA-256 checksum
         shell: bash
