@@ -9,30 +9,41 @@ hand.
 
 ---
 
-## 0. Prerequisite: this project is not yet a Git repository
+## 0. Prerequisite: a GitHub remote
 
-At the time of writing there is no `.git` directory and no GitHub remote, so the
-release workflow cannot run. The workflow file is committed and correct; it just
-needs a repository to live in.
+The repository **is** initialised locally, on branch `master`, with one commit
+containing 366 files. `.gitignore` was audited before that commit: `node_modules`,
+`target/`, `dist/`, `.env`, `.fm` saves, every certificate/key extension and all
+built installers are excluded, and a `git add -n .` dry run was checked to
+confirm none of them were staged.
 
-To enable it — **run these yourself, they are not automated**:
+What does **not** exist is a remote — so the release workflow has nowhere to run.
+
+Creating one publishes the code, so it is your call:
 
 ```bash
 cd <this directory>
 
-git init
-git add .
-git commit -m "Veytaro: rebrand, installers, download website"
-
-# Create the remote. Choose private unless you intend the code to be public.
+# Private only. GitHub is used here purely as Windows/macOS build
+# infrastructure, not as website hosting.
 gh repo create veytaro --private --source=. --remote=origin --push
 ```
 
-Nothing above has been done for you: creating or pushing to a remote publishes
-the code, which is your call to make.
+Then trigger a build:
 
-Check that `.gitignore` still excludes what you expect before the first commit —
-`node_modules`, `dist`, `src-tauri/target` and `.env` are already listed.
+```bash
+gh workflow run release.yml
+gh run list --workflow release.yml --limit 1
+gh run watch <run-id>
+```
+
+Verify before pushing anything:
+
+```bash
+git log --oneline           # expect one commit
+git ls-files | wc -l        # expect 366
+git status --short          # expect empty
+```
 
 ---
 
@@ -106,6 +117,16 @@ Confirm the build really is universal:
 lipo -archs src-tauri/target/universal-apple-darwin/release/bundle/macos/Veytaro.app/Contents/MacOS/Veytaro
 # expect: x86_64 arm64
 ```
+
+`lipo -archs` only prints — it exits 0 even for a single-architecture binary, so
+reading the output is the check. The workflow asserts both slices explicitly and
+fails when either is missing.
+
+**Minimum macOS is 11.0 (Big Sur), not 10.15.** The Apple Silicon half of a
+universal binary cannot target anything older: `rustc --print deployment-target
+--target aarch64-apple-darwin` reports `MACOSX_DEPLOYMENT_TARGET=11.0`. The
+Intel slice could reach 10.12, but a single `LSMinimumSystemVersion` covers the
+whole bundle, so 11.0 is the honest floor to advertise.
 
 If a universal build is impossible on your machine, build the two slices
 separately and name them

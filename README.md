@@ -72,7 +72,15 @@ without changing anything a user reads:
 | `scoutiq.*` localStorage keys | Theme, language, recent saves, squad and cloud state. Renaming silently resets every existing user's settings. |
 | `SCOUTIQ_COMPETITION_NAMES` | Read by the packaged app to locate the bundled catalogue, and documented as a deployment override. |
 | `SCOUTIQ_TEST_SAVES` | Documented in every test-running instruction; renaming would silently turn live save checks into skips. |
-| Supabase column and table values | Database values. Renaming requires a migration against live data. |
+| Supabase table and column names | Schema identifiers. Renaming needs a migration against live data. |
+
+The one Supabase value that *was* changed is the last-resort `display_name`
+default in the `handle_new_user` trigger (`supabase/profiles.sql`,
+`supabase/cloud_sync.sql`): it inserted the literal `'ScoutIQ'` as a new user's
+display name, which is user-visible and contradicted the frontend's own
+`"Veytaro"` fallback. It is a default for **new** rows only — existing profiles
+keep whatever they hold, so no migration is implied. Re-run those scripts in the
+Supabase SQL editor for the change to take effect.
 
 The Rust crate itself **was** renamed (`scoutiq` → `veytaro`, lib
 `scoutiq_lib` → `veytaro_lib`): that is package metadata, the compiler verifies
@@ -140,6 +148,11 @@ npm run build
 `SCOUTIQ_TEST_SAVES` points at a directory of `.fm` files. Without it the live
 checks print `SKIPPED …` rather than passing silently — they were once keyed on
 absolute paths from one machine and passed vacuously everywhere else.
+
+**Read the count carefully.** Without saves, `cargo test` reports 95 passing but
+eight of those tests do no work — including both read-only safety checks. Only
+87 genuinely execute. A run that proves the read-only guarantee has 95 passing
+and **no `SKIPPED` lines**. See `ACCEPTANCE_CHECKLIST.md` section D.
 
 ### Read-only guarantee
 
