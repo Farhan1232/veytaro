@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seite nicht gefunden — Veytaro</title>
+    <meta name="robots" content="noindex, follow" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#08090b" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!--
+      Standalone page: it must render correctly even when the SPA bundle is not
+      loaded, so the styles are inline and it uses system fonts as a fallback.
+    -->
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 20px;
+        padding: 32px 24px;
+        text-align: center;
+        font-family: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.6;
+        color: #f4f6f8;
+        background:
+          radial-gradient(
+            1200px 600px at 12% -10%,
+            rgba(57, 255, 103, 0.07),
+            transparent 55%
+          ),
+          #08090b;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      img {
+        width: 92px;
+        height: auto;
+        display: block;
+      }
+
+      .code {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #39ff67;
+      }
+
+      h1 {
+        margin: 0;
+        font-family: "Sora", "Outfit", system-ui, sans-serif;
+        font-size: clamp(26px, 5vw, 34px);
+        font-weight: 600;
+        letter-spacing: -0.025em;
+      }
+
+      p {
+        margin: 0;
+        max-width: 46ch;
+        color: #b3bcc7;
+      }
+
+      a {
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        padding: 12px 26px;
+        border-radius: 12px;
+        background: #39ff67;
+        color: #0a0b0d;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background 140ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      a:hover {
+        background: #4dff78;
+      }
+
+      a:focus-visible {
+        outline: 2px solid #39ff67;
+        outline-offset: 3px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <img src="/veytaro-mark.png" alt="Veytaro" width="512" height="356" />
+    <p class="code">Fehler 404</p>
+    <h1>Diese Seite gibt es nicht.</h1>
+    <p>Die aufgerufene Adresse existiert nicht oder wurde verschoben.</p>
+    <a href="/">Zur Startseite</a>
+  </body>
+</html>

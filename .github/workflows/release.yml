@@ -1,0 +1,535 @@
+name: Release
+
+# Windows installers are built on a Windows runner and macOS DMGs on a macOS
+# runner. Neither can be produced on Linux, so there is no Linux build job here.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+# Least privilege by default: only the `release` job, which runs on tag pushes,
+# raises this to `contents: write` for itself.
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Read the version from tauri.conf.json once, so every artifact name agrees.
+  # ---------------------------------------------------------------------------
+  meta:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from tauri.conf.json
+        id: v
+        shell: bash
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ -z "$version" ]; then
+            echo "Could not read version from src-tauri/tauri.conf.json" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Veytaro version: $version"
+
+      - name: Tag must match the configured version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          cfg="${{ steps.v.outputs.version }}"
+          if [ "$tag" != "$cfg" ]; then
+            echo "Tag v$tag does not match tauri.conf.json version $cfg" >&2
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Checks that do not need a desktop toolchain. Runs once, not per platform.
+  # ---------------------------------------------------------------------------
+  checks:
+    name: Frontend and website checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            website/package-lock.json
+
+      # The repository uses npm with a package-lock.json — `npm ci` installs
+      # exactly what is locked. Do not switch package managers here.
+      - name: Install desktop app dependencies
+        run: npm ci
+
+      - name: Typecheck desktop frontend
+        run: npx tsc --noEmit
+
+      - name: Build desktop frontend
+        run: npm run build
+
+      - name: Install website dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Typecheck website
+        working-directory: website
+        run: npm run typecheck
+
+      - name: Lint website
+        working-directory: website
+        run: npm run lint
+
+      - name: Test website
+        working-directory: website
+        run: npm test
+
+      - name: Build website
+        working-directory: website
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # Rust test suite. Live-save checks skip loudly without SCOUTIQ_TEST_SAVES,
+  # which is correct for CI — no .fm saves are committed to this repository.
+  # ---------------------------------------------------------------------------
+  rust-tests:
+    name: Rust test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libgtk-3-dev
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: cargo fmt --check
+        working-directory: src-tauri
+        run: cargo fmt --check
+
+      - name: cargo test (library)
+        working-directory: src-tauri
+        run: cargo test --release --lib
+
+      # Research tools must still compile, but only behind their feature gate.
+      - name: Research tools compile behind their feature flag
+        working-directory: src-tauri
+        run: |
+          cargo build --release --features research-tools --bin fm_probe
+          cargo build --release --features research-tools --bin fm_catalogue
+
+      - name: Research tools are unbuildable without the feature
+        working-directory: src-tauri
+        shell: bash
+        run: |
+          if cargo build --release --bin fm_probe 2>/dev/null; then
+            echo "fm_probe built without the research-tools feature — the gate is broken" >&2
+            exit 1
+          fi
+          echo "Confirmed: fm_probe requires --features research-tools"
+
+  # ---------------------------------------------------------------------------
+  # Windows: NSIS .exe on a native Windows runner.
+  # ---------------------------------------------------------------------------
+  windows:
+    name: Windows installer (x64)
+    needs: [meta, checks, rust-tests]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      # No --features flag: the default (empty) feature set excludes fm_probe
+      # and fm_catalogue, so neither can be selected as the app binary.
+      #
+      # Signing is opt-in. When the certificate secrets are absent these env
+      # vars are empty, Tauri skips signing, and the build still succeeds —
+      # an unsigned test build must never require credentials. Secret values
+      # are only ever passed through env, never echoed.
+      - name: Build NSIS installer
+        env:
+          TAURI_WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+        run: npm run tauri build -- --target x86_64-pc-windows-msvc --bundles nsis
+
+      - name: Report signing status
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}" ]; then
+            echo "A Windows signing certificate was configured for this build."
+            echo "Verify with signtool before marking the artifact signed."
+          else
+            echo "UNSIGNED BUILD: no WINDOWS_CERTIFICATE_THUMBPRINT secret is set."
+            echo "SmartScreen will warn users. See SIGNING.md."
+          fi
+
+      - name: Rename to the stable Veytaro filename
+        id: artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ needs.meta.outputs.version }}"
+          out="dist-release"
+          mkdir -p "$out"
+
+          src=$(find src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis \
+                  -name "*.exe" -type f | head -n 1)
+          if [ -z "$src" ]; then
+            echo "No NSIS installer was produced" >&2
+            exit 1
+          fi
+
+          name="Veytaro_${version}_Windows_x64_Setup.exe"
+          cp "$src" "$out/$name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Verify the installer is a real, non-empty executable
+        shell: bash
+        working-directory: dist-release
+        run: |
+          set -euo pipefail
+          name="${{ steps.artifact.outputs.name }}"
+
+          size=$(stat -c %s "$name" 2>/dev/null || stat -f %z "$name")
+          echo "size: $size bytes"
+          # A Tauri NSIS installer is megabytes; anything tiny means the build
+          # silently produced a stub.
+          if [ "$size" -lt 1000000 ]; then
+            echo "Installer is only $size bytes — not a real build" >&2
+            exit 1
+          fi
+
+          # "MZ" magic: a genuine PE executable, not a renamed text file.
+          magic=$(head -c 2 "$name")
+          if [ "$magic" != "MZ" ]; then
+            echo "Missing PE 'MZ' magic — this is not a Windows executable" >&2
+            exit 1
+          fi
+          echo "PE magic OK"
+
+      - name: Inspect installer metadata
+        shell: pwsh
+        working-directory: dist-release
+        run: |
+          $name = "${{ steps.artifact.outputs.name }}"
+          $item = Get-Item $name
+          $vi = $item.VersionInfo
+          Write-Host "FileName        : $($item.Name)"
+          Write-Host "Length          : $($item.Length)"
+          Write-Host "ProductName     : $($vi.ProductName)"
+          Write-Host "FileDescription : $($vi.FileDescription)"
+          Write-Host "CompanyName     : $($vi.CompanyName)"
+          Write-Host "ProductVersion  : $($vi.ProductVersion)"
+          $sig = Get-AuthenticodeSignature $name
+          Write-Host "SignatureStatus : $($sig.Status)"
+
+      # Best-effort automated smoke test. This is NOT a manual installation
+      # test: it proves the installer runs unattended and lays down the
+      # expected files, nothing about the GUI or real-world use.
+      - name: Smoke test — silent install, verify, uninstall
+        shell: pwsh
+        working-directory: dist-release
+        run: |
+          $ErrorActionPreference = "Stop"
+          $name = "${{ steps.artifact.outputs.name }}"
+
+          Write-Host "== silent install (/S, current user) =="
+          $p = Start-Process -FilePath ".\$name" -ArgumentList "/S" -PassThru -Wait
+          Write-Host "installer exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "Silent install failed ($($p.ExitCode))" }
+
+          # Don't assume the install root: NSIS currentUser mode puts it under
+          # LOCALAPPDATA, but locate it rather than hard-coding one path.
+          $roots = @($env:LOCALAPPDATA, $env:ProgramFiles, ${env:ProgramFiles(x86)}) |
+                   Where-Object { $_ -and (Test-Path $_) }
+          $found = foreach ($r in $roots) {
+            Get-ChildItem $r -Recurse -Depth 2 -Filter "Veytaro.exe" -ErrorAction SilentlyContinue
+          }
+          if (-not $found) { throw "Installed Veytaro.exe not found under: $($roots -join ', ')" }
+
+          $exe = $found[0].FullName
+          $installDir = Split-Path $exe -Parent
+          Write-Host "install dir   : $installDir"
+          Write-Host "installed exe : $exe"
+          Write-Host "exe size      : $((Get-Item $exe).Length) bytes"
+
+          $res = Join-Path $installDir "resources\competition_names\fm26.json"
+          if (-not (Test-Path $res)) { throw "Bundled catalogue missing at $res" }
+          Write-Host "catalogue     : present"
+
+          Write-Host "== research binaries must be absent =="
+          $leaked = Get-ChildItem $installDir -Recurse -Include "fm_probe*","fm_catalogue*" -ErrorAction SilentlyContinue
+          if ($leaked) { $leaked | ForEach-Object { Write-Host $_.FullName }; throw "Research binary shipped in the installer" }
+          Write-Host "none present"
+
+          Write-Host "== uninstall entry =="
+          $key = Get-ChildItem "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall" |
+                 ForEach-Object { Get-ItemProperty $_.PSPath } |
+                 Where-Object { $_.DisplayName -like "Veytaro*" }
+          if (-not $key) { throw "No Veytaro uninstall entry was registered" }
+          Write-Host "DisplayName    : $($key.DisplayName)"
+          Write-Host "DisplayVersion : $($key.DisplayVersion)"
+          Write-Host "Publisher      : $($key.Publisher)"
+
+          Write-Host "== silent uninstall =="
+          $uninst = Join-Path $installDir "uninstall.exe"
+          if (Test-Path $uninst) {
+            $u = Start-Process -FilePath $uninst -ArgumentList "/S" -PassThru -Wait
+            Write-Host "uninstaller exit code: $($u.ExitCode)"
+            Start-Sleep -Seconds 5
+            if (Test-Path $exe) { Write-Host "WARNING: executable still present after uninstall" }
+            else { Write-Host "uninstall removed the executable" }
+          } else {
+            Write-Host "WARNING: uninstall.exe not found; skipping uninstall leg"
+          }
+
+      - name: Generate SHA-256 checksum
+        shell: bash
+        working-directory: dist-release
+        run: |
+          set -euo pipefail
+          name="${{ steps.artifact.outputs.name }}"
+          sha256sum "$name" > "$name.sha256"
+          cat "$name.sha256"
+          ls -l
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: veytaro-windows-x64
+          path: dist-release/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # macOS: one universal DMG covering Apple Silicon and Intel.
+  # ---------------------------------------------------------------------------
+  macos:
+    name: macOS installer (universal)
+    needs: [meta, checks, rust-tests]
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # A universal binary needs both slices available to lipo.
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Signing and notarization are opt-in. With the secrets unset these env
+      # vars are empty, Tauri skips both, and the build still succeeds — an
+      # unsigned test build must never require Apple credentials. Values are
+      # only passed through env, never echoed.
+      - name: Build universal DMG
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run tauri build -- --target universal-apple-darwin --bundles dmg
+
+      - name: Report signing status
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.APPLE_SIGNING_IDENTITY }}" ]; then
+            echo "An Apple signing identity was configured for this build."
+            echo "Confirm with 'spctl -a -vvv -t install' before claiming notarization."
+          else
+            echo "UNSIGNED BUILD: no APPLE_SIGNING_IDENTITY secret is set."
+            echo "Gatekeeper will warn users. See SIGNING.md."
+          fi
+
+      - name: Rename to the stable Veytaro filename
+        id: artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ needs.meta.outputs.version }}"
+          out="dist-release"
+          mkdir -p "$out"
+
+          src=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg \
+                  -name "*.dmg" -type f | head -n 1)
+          if [ -z "$src" ]; then
+            echo "No DMG was produced" >&2
+            exit 1
+          fi
+
+          name="Veytaro_${version}_macOS_Universal.dmg"
+          cp "$src" "$out/$name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      # `lipo -archs` only prints; on its own it would pass even for a
+      # single-architecture binary. Both slices are asserted explicitly.
+      - name: Verify the built app binary is universal
+        shell: bash
+        run: |
+          set -euo pipefail
+          app=$(find src-tauri/target/universal-apple-darwin/release/bundle/macos \
+                  -maxdepth 1 -name "*.app" | head -n 1)
+          [ -n "$app" ] || { echo "No .app bundle was produced" >&2; exit 1; }
+
+          bin="$app/Contents/MacOS/Veytaro"
+          [ -f "$bin" ] || { echo "Main binary missing at $bin" >&2; exit 1; }
+
+          archs=$(lipo -archs "$bin")
+          echo "lipo -archs: $archs"
+          for want in arm64 x86_64; do
+            case " $archs " in
+              *" $want "*) echo "  $want present" ;;
+              *) echo "  MISSING $want — this build is not universal" >&2; exit 1 ;;
+            esac
+          done
+
+          echo "--- Info.plist ---"
+          plist="$app/Contents/Info.plist"
+          for k in CFBundleName CFBundleIdentifier CFBundleShortVersionString LSMinimumSystemVersion; do
+            printf '%-30s %s\n' "$k" "$(/usr/libexec/PlistBuddy -c "Print :$k" "$plist" 2>/dev/null || echo '<unset>')"
+          done
+
+          echo "--- research binaries must be absent ---"
+          if find "$app/Contents/MacOS" -name 'fm_probe*' -o -name 'fm_catalogue*' | grep -q .; then
+            echo "Research binary shipped inside the .app" >&2
+            exit 1
+          fi
+          echo "none present"
+
+      # Structural inspection of the artifact users actually download.
+      - name: Mount the DMG and inspect its contents
+        shell: bash
+        working-directory: dist-release
+        run: |
+          set -euo pipefail
+          name="${{ steps.artifact.outputs.name }}"
+
+          size=$(stat -f %z "$name")
+          echo "size: $size bytes"
+          if [ "$size" -lt 1000000 ]; then
+            echo "DMG is only $size bytes — not a real build" >&2
+            exit 1
+          fi
+
+          hdiutil imageinfo "$name" | grep -E 'Format:|Checksum Type:' || true
+
+          mnt=$(mktemp -d)
+          hdiutil attach "$name" -nobrowse -readonly -mountpoint "$mnt"
+          trap 'hdiutil detach "$mnt" -quiet || true' EXIT
+
+          echo "--- DMG contents ---"
+          ls -la "$mnt"
+
+          app="$mnt/Veytaro.app"
+          [ -d "$app" ] || { echo "Veytaro.app not found inside the DMG" >&2; exit 1; }
+          echo "Veytaro.app present inside the DMG"
+
+          [ -L "$mnt/Applications" ] && echo "/Applications drop target present"
+
+          archs=$(lipo -archs "$app/Contents/MacOS/Veytaro")
+          echo "archs inside DMG: $archs"
+          for want in arm64 x86_64; do
+            case " $archs " in
+              *" $want "*) ;;
+              *) echo "MISSING $want inside the shipped DMG" >&2; exit 1 ;;
+            esac
+          done
+
+          res="$app/Contents/Resources/resources/competition_names/fm26.json"
+          [ -f "$res" ] || { echo "Bundled catalogue missing at $res" >&2; exit 1; }
+          echo "bundled catalogue present"
+
+          echo "--- codesign / Gatekeeper (informational) ---"
+          codesign -dv --verbose=2 "$app" 2>&1 | head -20 || echo "not signed"
+          spctl -a -vvv -t install "$app" 2>&1 | head -5 || echo "Gatekeeper: rejected (expected while unsigned)"
+
+      - name: Generate SHA-256 checksum
+        shell: bash
+        working-directory: dist-release
+        run: |
+          name="${{ steps.artifact.outputs.name }}"
+          shasum -a 256 "$name" > "$name.sha256"
+          cat "$name.sha256"
+          ls -l
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: veytaro-macos-universal
+          path: dist-release/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Attach the installers to a GitHub release — tag pushes only.
+  # ---------------------------------------------------------------------------
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [meta, windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List collected artifacts
+        run: ls -lR artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Veytaro ${{ needs.meta.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          draft: true
+          files: artifacts/*
+          fail_on_unmatched_files: true

@@ -1,0 +1,82 @@
+/*
+  Design tokens mirrored from the desktop application
+  (scoutiq/src/styles/tokens.css and themes.css) so the download page and the
+  product it ships look like one system. Values are copied, not re-invented —
+  if the app's palette moves, update it here too.
+
+  The app defaults to its dark theme and the brand mark is built for a dark
+  surface, so the site commits to dark only.
+*/
+
+:root {
+  color-scheme: dark;
+
+  /* Brand accent — identical to the app's --brand-accent. */
+  --accent: #39ff67;
+  --accent-hover: #4dff78;
+  --accent-soft: rgba(57, 255, 103, 0.12);
+  --accent-softer: rgba(57, 255, 103, 0.06);
+  --accent-glow: rgba(57, 255, 103, 0.22);
+  --accent-border: rgba(57, 255, 103, 0.28);
+  --accent-ring: rgba(57, 255, 103, 0.25);
+  --accent-ambient: rgba(57, 255, 103, 0.07);
+  --info-ambient: rgba(107, 163, 255, 0.05);
+
+  /* Surfaces */
+  --bg-base: #08090b;
+  --bg-shell: #0c0e11;
+  --bg-elevated: #111316;
+  --bg-surface: #15181d;
+  --bg-surface-hover: #1a1e25;
+  --bg-muted: #1e232b;
+  --bg-overlay-02: rgba(255, 255, 255, 0.02);
+  --bg-overlay-04: rgba(255, 255, 255, 0.04);
+  --bg-overlay-08: rgba(255, 255, 255, 0.08);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+
+  /* Text — contrast against --bg-base is verified in website/README.md */
+  --text-primary: #f4f6f8;
+  --text-secondary: #b3bcc7;
+  --text-muted: #8a94a1;
+  --text-inverse: #0a0b0d;
+
+  --warning: #f5b84c;
+
+  /* Radii — the app's scale */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* Typography — self-hosted, see main.tsx */
+  --font-sans: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Sora", var(--font-sans);
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 140ms;
+  --duration: 220ms;
+
+  /* Elevation */
+  --shadow-card: 0 12px 28px rgba(0, 0, 0, 0.28);
+  --shadow-button-primary:
+    0 0 0 1px var(--accent-ring), 0 8px 20px rgba(57, 255, 103, 0.15);
+  --shadow-logo: 0 0 24px rgba(57, 255, 103, 0.12);
+
+  /* Layout */
+  --page-max: 1120px;
+  --page-gutter: 24px;
+  --section-gap: clamp(64px, 9vw, 120px);
+}
+
+@media (max-width: 600px) {
+  :root {
+    --page-gutter: 20px;
+  }
+}

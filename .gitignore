@@ -1,0 +1,87 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.*
+!.env.example
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Rust build output (also covered by src-tauri/.gitignore)
+target/
+
+# Tauri generated capability schemas
+src-tauri/gen/schemas/
+
+# Release installers are attached to GitHub releases, not committed.
+# The download page reads them from website/public/downloads/ at deploy time.
+website/public/downloads/*
+!website/public/downloads/README.md
+
+# Locally staged / downloaded release artifacts
+dist-release/
+artifacts/
+*.exe
+*.dmg
+*.msi
+*.deb
+*.rpm
+*.AppImage
+*.sha256
+
+# ---------------------------------------------------------------------------
+# Never commit signing material or credentials.
+# These patterns are deliberately broad; nothing in this project legitimately
+# carries these extensions.
+# ---------------------------------------------------------------------------
+*.p12
+*.pfx
+*.cer
+*.crt
+*.key
+*.pem
+*.der
+*.keystore
+*.jks
+*.mobileprovision
+*.provisionprofile
+AuthKey_*.p8
+*.p8
+*.keychain
+*.keychain-db
+.tauri/
+*.tauri.key
+*.tauri.key.pub
+secrets.json
+credentials.json
+gha-creds-*.json
+
+# Football Manager save files. These are user data: never versioned, and the
+# parser only ever opens them read-only.
+*.fm
+*.fmf
+saves/
+
+# OS noise
+Thumbs.db
+ehthumbs.db
+desktop.ini

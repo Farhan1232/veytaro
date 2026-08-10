@@ -1,0 +1,159 @@
+.dl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.dl-card {
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+  background:
+    linear-gradient(180deg, var(--bg-overlay-02), transparent 40%),
+    var(--bg-elevated);
+  transition:
+    border-color var(--duration) var(--ease-out),
+    transform var(--duration) var(--ease-out);
+}
+
+.dl-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+
+/* The detected platform is emphasised with the brand edge, not with colour
+   alone — the badge repeats the meaning in text. */
+.dl-card.is-recommended {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 1px var(--accent-border), var(--shadow-card);
+}
+
+.dl-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.dl-card__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.dl-card.is-recommended .dl-card__icon {
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.dl-card__badge {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dl-card__title {
+  font-size: 21px;
+}
+
+.dl-card__req {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.dl-card__meta {
+  margin: 24px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dl-card__meta dt {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.dl-card__meta dd {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.dl-card__pending {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 14px;
+}
+
+.dl-card__action {
+  margin-top: auto;
+  padding-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.dl-card__note {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--warning);
+}
+
+.dl-card__checksum {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.dl-card__checksum-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.dl-card__checksum code {
+  /* A 64-character hash must wrap instead of widening the page. */
+  display: block;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 560px) {
+  .dl-card {
+    padding: 24px 20px;
+  }
+
+  .dl-card__meta {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .dl-card__action {
+    align-items: stretch;
+  }
+}
