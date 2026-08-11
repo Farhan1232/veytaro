@@ -150,7 +150,10 @@ if grep -q 'SKIPPED' "$test_log"; then
 	bad "a test printed SKIPPED — it did no work:"
 	grep -n 'SKIPPED' "$test_log" | sed 's/^/        /'
 else
-	ok "no test printed SKIPPED"
+	# Deliberately does not contain the literal skip marker: this script's own
+	# output is normally tee'd to a log that is then grepped for it, and a
+	# success message that matches the failure pattern is worse than useless.
+	ok "no skip markers in the cargo output"
 fi
 
 if result_line=$(grep -m1 '^test result:' "$test_log"); then

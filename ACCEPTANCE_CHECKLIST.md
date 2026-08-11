@@ -17,8 +17,8 @@ Last run: 2026-08-11.
 | # | Check | Command | Result |
 | --- | --- | --- | --- |
 | A1 | Rust suite | `cargo test --release --lib` | 96 passed, 0 failed, 1 ignored |
-| A2 | …of which genuinely executed | `-- --nocapture` | **87 real, 9 skipped** — see the warning below |
-| A2s | Strict real-save gate | `scripts/verify-fm-saves.sh` | **not run — no saves on this machine**, aborts at step 2 |
+| A2 | …of which genuinely executed *without* saves | `-- --nocapture` | **87 real, 9 skipped** — see the warning below |
+| A2s | **Strict real-save gate** | `SCOUTIQ_TEST_SAVES=… scripts/verify-fm-saves.sh` | **PASS, exit 0** — 96/96 with all 8 saves parsed, 8/8 scenarios, 0 skips, every save byte-identical |
 | A3 | Formatting | `cargo fmt --check` | pass |
 | A4 | Research tools build behind the gate | `cargo build --release --features research-tools --bin fm_probe` / `fm_catalogue` | both build |
 | A5 | Research tools blocked without the gate | `cargo build --release --bin fm_probe` | exit 101, `requires the features: research-tools` |
@@ -46,9 +46,9 @@ Last run: 2026-08-11.
 > | `read_only_safety::parsing_a_save_leaves_the_file_untouched` | read-only check |
 > | `read_only_safety::parses_a_save_whose_file_is_write_protected` | write-protection check |
 >
-> **The read-only guarantee is therefore unproven on this machine.** It is the
-> single most important claim the product makes, so treat A2 as open until the
-> calibration saves are supplied. See section D.
+> **A bare `cargo test` therefore proves nothing about the read-only
+> guarantee** — the single most important claim the product makes. It was
+> proven separately, on all eight real saves, by A2s; see section D.
 >
 > Two things now stop this from being read as a pass:
 >
@@ -160,14 +160,25 @@ development machine.
 
 ---
 
-## D. Blocked: real-save regression tests
+## D. Real-save regression tests — PASSED 2026-08-11
 
-The eight calibration saves are **not present on this machine**. Searched
-2026-08-11 across `~/Documents`, `~/Downloads`, `/mnt/storage`, `/media`,
-`/run/media` and the whole of `$HOME`: no `.fm` file anywhere, and no archive
-containing one. `/mnt/storage` exists but is empty and root-owned.
+All eight calibration saves were supplied and the strict gate passed, exit `0`:
 
-To close A2, put the saves in one directory outside the repository and run, from
+```text
+8 .fm files · 96 passed, 0 failed · 8/8 CALIBRATION-OK · 0 skips
+size, mtime and SHA-256 identical before and after · sha256sum -c all OK
+```
+
+Every scenario below resolved to exactly the club uid, competition uid **and**
+trailer date recorded in `fm26-research/FINDINGS.md` — including VVV-Venlo
+(club 1043 → competition 30), whose uid comes from the club-table fallback
+because that save's name table yields zero records. The manager resolved as
+`Niclas Krieck` on all eight. **No parser code was changed to achieve this.**
+
+The saves are held outside the repository; the run used mode-`444` copies and
+the originals were verified byte-identical afterwards.
+
+To re-run: put the saves in one directory outside the repository and run, from
 the repository root:
 
 ```bash
