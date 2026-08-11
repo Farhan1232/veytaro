@@ -164,7 +164,7 @@ export const de: SiteContent = {
 
   security: {
     id: "sicherheit",
-    eyebrow: "Sicherheit",
+    eyebrow: "Sicherer Download & Dateiprüfung",
     heading: "Warum die Prüfsumme wichtig ist",
     description:
       "Eine SHA-256-Prüfsumme ist ein Fingerabdruck einer Datei. Ändert sich auch nur ein einziges Byte, ändert sich der Wert vollständig. Der Vergleich zeigt dir also, ob die heruntergeladene Datei exakt die ist, die hier veröffentlicht wurde.",
