@@ -131,9 +131,6 @@ cd src-tauri
 # Unit tests. Live save checks skip loudly without SCOUTIQ_TEST_SAVES.
 cargo test --release --lib
 
-# The full suite, including read-only safety and the eight calibration saves.
-SCOUTIQ_TEST_SAVES=/path/to/saves cargo test --release --lib
-
 cargo build --release --features research-tools --bin fm_probe
 cargo fmt --check
 ```
@@ -145,14 +142,37 @@ npm run typecheck
 npm run build
 ```
 
-`SCOUTIQ_TEST_SAVES` points at a directory of `.fm` files. Without it the live
-checks print `SKIPPED …` rather than passing silently — they were once keyed on
+**Read the count carefully.** Without saves, `cargo test` reports 96 passing but
+nine of those tests do no work — including both read-only safety checks. Only 87
+genuinely execute. That is correct for CI, which has no access to the private
+saves, and misleading anywhere else.
+
+### Strict acceptance: the eight calibration saves
+
+The real check is a script, because a green `cargo test` cannot distinguish
+"parsed eight saves correctly" from "found no saves and skipped":
+
+```bash
+SCOUTIQ_TEST_SAVES=/absolute/path/to/saves scripts/verify-fm-saves.sh
+```
+
+It requires the variable, requires exactly eight `.fm` files, records size,
+mtime and SHA-256 of each, runs the suite with `SCOUTIQ_TEST_SAVES_STRICT=1` so
+that every skip becomes a failure, requires one `CALIBRATION-OK` line per
+scenario, re-checks all three fingerprints afterwards, and exits non-zero on any
+of it. It never writes to the saves, and refuses to run against a directory
+inside the repository.
+
+`SCOUTIQ_TEST_SAVES` points at a directory of `.fm` files; discovery is by
+extension only, so the saves may be named anything. Without it the live checks
+print `SKIPPED …` rather than passing silently — they were once keyed on
 absolute paths from one machine and passed vacuously everywhere else.
 
-**Read the count carefully.** Without saves, `cargo test` reports 95 passing but
-eight of those tests do no work — including both read-only safety checks. Only
-87 genuinely execute. A run that proves the read-only guarantee has 95 passing
-and **no `SKIPPED` lines**. See `ACCEPTANCE_CHECKLIST.md` section D.
+The eight scenarios are matched on the resolved
+`(club uid, competition uid, trailer date)` — never on a filename — and are
+listed in `ACCEPTANCE_CHECKLIST.md` section D. The saves themselves are client
+data: they are never committed, never copied into the repository, and only ever
+opened read-only.
 
 ### Read-only guarantee
 
@@ -160,6 +180,8 @@ Saves are opened with `File::open` only and are never written, renamed or
 truncated. `read_only_safety::parsing_a_save_leaves_the_file_untouched` asserts
 the property rather than the intent: it records size, modification time and
 SHA-256 for every save, runs the full identity parser, and re-checks all three.
+`scripts/verify-fm-saves.sh` repeats the same three checks from outside the test
+process, so the guarantee does not rest on the parser grading its own homework.
 
 ## Competition-name catalogue
 

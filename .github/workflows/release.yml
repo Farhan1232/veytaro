@@ -103,6 +103,11 @@ jobs:
   # ---------------------------------------------------------------------------
   # Rust test suite. Live-save checks skip loudly without SCOUTIQ_TEST_SAVES,
   # which is correct for CI — no .fm saves are committed to this repository.
+  # A green run here therefore proves the 87 fixture-free tests and nothing
+  # about real saves. That is what scripts/verify-fm-saves.sh is for; it runs
+  # on a machine that holds the private calibration saves, sets
+  # SCOUTIQ_TEST_SAVES_STRICT=1 so no check can skip, and must never be wired
+  # into this workflow.
   # ---------------------------------------------------------------------------
   rust-tests:
     name: Rust test suite

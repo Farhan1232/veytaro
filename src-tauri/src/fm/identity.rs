@@ -418,22 +418,114 @@ fn wrap_result(
     }
 }
 
+/// The eight private calibration saves: their ground truth, and the fixture
+/// plumbing shared by the live-save and read-only test modules.
+///
+/// Every expected value here is transcribed from `fm26-research/FINDINGS.md`
+/// (§1 *Verification* for the club/competition/date table, §4c for the Venlo
+/// club uid). None of it was produced by running the parser and writing down
+/// whatever came out.
+///
+/// The saves are client data: they are never committed, never copied into the
+/// repository and never modified. Point `SCOUTIQ_TEST_SAVES` at a directory
+/// holding them:
+///
+/// ```text
+/// SCOUTIQ_TEST_SAVES=/path/to/saves cargo test --release --lib -- --nocapture
+/// ```
+///
+/// Without it these checks skip *loudly*. They were previously keyed on
+/// absolute paths from one developer's machine, so on every other machine they
+/// passed vacuously while appearing to verify real saves — which is also why
+/// [`skip`] exists rather than an inline `eprintln!` per test.
 #[cfg(test)]
-mod live_save_tests {
-    use super::*;
+mod calibration {
     use std::path::PathBuf;
 
-    /// Live checks against real saves. Point `SCOUTIQ_TEST_SAVES` at a directory
-    /// of `.fm` files:
-    ///
-    /// ```text
-    /// SCOUTIQ_TEST_SAVES=/path/to/saves cargo test --release --lib -- --nocapture
-    /// ```
-    ///
-    /// Without it the checks skip *loudly*. They were previously keyed on
-    /// absolute paths from one developer's machine, so on every other machine
-    /// they passed vacuously while appearing to verify real saves.
-    fn saves() -> Vec<PathBuf> {
+    /// One calibration save, identified by what it **resolves to** rather than
+    /// by its filename. The resolver must never recognise or rank a save by
+    /// name, so neither may the test that grades it — the saves may be renamed
+    /// or copied freely and this manifest still applies.
+    pub struct Scenario {
+        /// Stable machine-readable id. Printed by
+        /// [`the_eight_calibration_scenarios_are_all_present`] and grepped out
+        /// of the log by `scripts/verify-fm-saves.sh`.
+        pub slug: &'static str,
+        pub label: &'static str,
+        pub club_id: u64,
+        pub competition_id: u32,
+        /// Summary-trailer fixture date as `(day_of_year, year)`. `None` is FM's
+        /// 1/1900 null date, which only the save taken immediately after
+        /// promotion carries.
+        pub as_of: Option<(u16, u16)>,
+    }
+
+    /// Exactly eight — five clubs, three nations, four tiers, a custom-database
+    /// club, a competition uid far outside the small-id range, and a division
+    /// change. A ninth save, or one missing, is a failure rather than a silent
+    /// change in what the suite covers.
+    pub const SCENARIOS: [Scenario; 8] = [
+        Scenario {
+            slug: "bayer-leverkusen",
+            label: "Bayer Leverkusen — Bundesliga",
+            club_id: 901,
+            competition_id: 22,
+            as_of: Some((229, 2025)),
+        },
+        Scenario {
+            slug: "msv-duisburg",
+            label: "MSV Duisburg — 2. Bundesliga",
+            club_id: 933,
+            competition_id: 23,
+            as_of: Some((288, 2027)),
+        },
+        Scenario {
+            slug: "tsv-1860-muenchen",
+            label: "TSV 1860 München — Regionalliga Bayern",
+            club_id: 955,
+            competition_id: 91_107_111,
+            as_of: Some((248, 2026)),
+        },
+        Scenario {
+            slug: "vvv-venlo",
+            label: "VVV-Venlo — Eerste Divisie (FM 26.0.0, no parseable name table)",
+            club_id: 1043,
+            competition_id: 30,
+            as_of: Some((299, 2025)),
+        },
+        Scenario {
+            slug: "salford",
+            label: "Salford City — EFL League Two (pre-season)",
+            club_id: 5_103_842,
+            competition_id: 14,
+            as_of: Some((204, 2025)),
+        },
+        Scenario {
+            slug: "macclesfield-league-one",
+            label: "Macclesfield — EFL League One, in season",
+            club_id: 2_000_095_665,
+            competition_id: 13,
+            as_of: Some((131, 2030)),
+        },
+        Scenario {
+            slug: "macclesfield-promotion-won",
+            label: "Macclesfield — EFL League One, promotion just won (null fixture date)",
+            club_id: 2_000_095_665,
+            competition_id: 13,
+            as_of: None,
+        },
+        Scenario {
+            slug: "macclesfield-championship",
+            label: "Macclesfield — EFL Championship, pre-season",
+            club_id: 2_000_095_665,
+            competition_id: 12,
+            as_of: Some((201, 2030)),
+        },
+    ];
+
+    /// `.fm` files in `SCOUTIQ_TEST_SAVES`, sorted. Discovery is by extension
+    /// only: no filename is ever significant, and the directory is only read.
+    pub fn saves() -> Vec<PathBuf> {
         let Ok(dir) = std::env::var("SCOUTIQ_TEST_SAVES") else {
             return Vec::new();
         };
@@ -448,28 +540,146 @@ mod live_save_tests {
         out
     }
 
+    /// Set by `scripts/verify-fm-saves.sh`. Ordinary CI leaves it unset, because
+    /// the private saves are not in Git and a public build must still be able to
+    /// run the suite.
+    fn strict() -> bool {
+        matches!(
+            std::env::var("SCOUTIQ_TEST_SAVES_STRICT").as_deref(),
+            Ok("1" | "true" | "yes")
+        )
+    }
+
+    /// Loud skip; returns `true` so a caller can `if skip(…) { return; }`.
+    ///
+    /// In strict mode a missing fixture is a **failure** instead. That is the
+    /// whole point: `cargo test` reporting "95 passed" while eight of those
+    /// tests did no work is the bug this guards, and greppable output alone
+    /// relies on somebody reading the log.
+    #[must_use]
+    pub fn skip(reason: &str) -> bool {
+        assert!(
+            !strict(),
+            "STRICT: {reason} — SCOUTIQ_TEST_SAVES_STRICT is set, so a fixture that is \
+             missing or incomplete fails rather than skipping"
+        );
+        eprintln!("SKIPPED {reason}");
+        true
+    }
+
     /// Ground truth per club uid: the competition uids that club may legitimately
     /// be in across the calibration saves. Macclesfield has three saves spanning
     /// a promotion, so both League One (13) and the Championship (12) are valid —
     /// which of the two applies is the save's business, not the test's.
-    fn expected_competitions(club_id: u64) -> Option<&'static [u32]> {
-        match club_id {
-            901 => Some(&[22]),               // Bayer Leverkusen  — Bundesliga
-            933 => Some(&[23]),               // MSV Duisburg      — 2. Bundesliga
-            955 => Some(&[91_107_111]),       // TSV 1860 München  — Regionalliga Bayern
-            5_103_842 => Some(&[14]),         // Salford City      — EFL League Two
-            2_000_095_665 => Some(&[13, 12]), // Macclesfield — League One → Championship
-            _ => None,
+    ///
+    /// Derived from [`SCENARIOS`] so the manifest stays the single source of
+    /// truth; adding a save cannot leave this table behind.
+    pub fn expected_competitions(club_id: u64) -> Option<Vec<u32>> {
+        let uids: Vec<u32> = SCENARIOS
+            .iter()
+            .filter(|s| s.club_id == club_id)
+            .map(|s| s.competition_id)
+            .collect();
+        (!uids.is_empty()).then_some(uids)
+    }
+}
+
+#[cfg(test)]
+mod live_save_tests {
+    use super::calibration::{expected_competitions, saves, skip, SCENARIOS};
+    use super::*;
+
+    /// The calibration set is exactly eight saves covering eight scenarios.
+    /// Globbing `*.fm` cannot tell a complete set from a partial one, so every
+    /// other live test passes just as happily on seven saves as on eight. This
+    /// matches each save against the manifest and fails on a gap — the check
+    /// that catches VVV-Venlo being absent while everything else stays green.
+    ///
+    /// Matching is on `(club uid, competition uid, trailer date)`, never on the
+    /// filename, and the deep resolver is used because the Venlo save carries no
+    /// inline club-uid hint and no parseable name table: its uid comes from the
+    /// club table, which needs the `game_db` pass.
+    #[test]
+    fn the_eight_calibration_scenarios_are_all_present() {
+        use crate::fm::entities::resolve_save;
+        let saves = saves();
+        if saves.is_empty() && skip("scenario-coverage check — set SCOUTIQ_TEST_SAVES") {
+            return;
         }
+
+        // Keyed on the save name the container carries, so the same save copied
+        // in twice counts once rather than filling a second scenario's slot.
+        let mut by_save: std::collections::BTreeMap<String, (u64, u32, Option<(u16, u16)>)> =
+            Default::default();
+        for path in &saves {
+            let p = path.display().to_string();
+            let r = resolve_save(path, true).unwrap_or_else(|e| panic!("{p}: {e:?}"));
+            let club = r
+                .club_id
+                .unwrap_or_else(|| panic!("{p}: no club uid resolved"));
+            let comp = r
+                .competition_id
+                .unwrap_or_else(|| panic!("{p}: no competition uid resolved"));
+            by_save.insert(
+                r.save_name.clone(),
+                (u64::from(club), comp, r.competition_as_of),
+            );
+        }
+
+        let mut missing = Vec::new();
+        for want in &SCENARIOS {
+            let hit = by_save
+                .iter()
+                .find(|(_, &(c, comp, as_of))| {
+                    c == want.club_id && comp == want.competition_id && as_of == want.as_of
+                })
+                .map(|(name, _)| name.clone());
+            match hit {
+                Some(name) => eprintln!(
+                    "CALIBRATION-OK {} club={} competition={} as_of={} save={name:?} — {}",
+                    want.slug,
+                    want.club_id,
+                    want.competition_id,
+                    match want.as_of {
+                        Some((d, y)) => format!("day {d}/{y}"),
+                        None => "null".into(),
+                    },
+                    want.label,
+                ),
+                None => missing.push(want),
+            }
+        }
+
+        // Reported before asserting: on a mismatch the actual values are what
+        // tell a wrong or unexpected save apart from a parser regression.
+        if !missing.is_empty() {
+            eprintln!("resolved from {} distinct save(s):", by_save.len());
+            for (name, (club, comp, as_of)) in &by_save {
+                eprintln!("  {name:?} club={club} competition={comp} as_of={as_of:?}");
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "calibration set incomplete — {} of {} scenarios unmatched: {:?}",
+            missing.len(),
+            SCENARIOS.len(),
+            missing.iter().map(|s| s.slug).collect::<Vec<_>>()
+        );
+        assert_eq!(
+            by_save.len(),
+            SCENARIOS.len(),
+            "expected exactly {} distinct calibration saves, found {}",
+            SCENARIOS.len(),
+            by_save.len()
+        );
     }
 
     #[test]
     fn resolves_manager_and_club_on_calibration_saves() {
         let saves = saves();
-        if saves.is_empty() {
-            eprintln!(
-                "SKIPPED live save checks — set SCOUTIQ_TEST_SAVES=<dir of .fm saves> to run them"
-            );
+        if saves.is_empty()
+            && skip("live save checks — set SCOUTIQ_TEST_SAVES=<dir of .fm saves> to run them")
+        {
             return;
         }
         for path in saves {
@@ -504,8 +714,7 @@ mod live_save_tests {
     fn competition_uids_are_unchanged_by_name_resolution() {
         use crate::fm::entities::resolve_save;
         let saves = saves();
-        if saves.is_empty() {
-            eprintln!("SKIPPED uid regression check — set SCOUTIQ_TEST_SAVES");
+        if saves.is_empty() && skip("uid regression check — set SCOUTIQ_TEST_SAVES") {
             return;
         }
         let mut checked = 0usize;
@@ -540,8 +749,7 @@ mod live_save_tests {
     fn save_embedded_names_are_preferred_and_labelled() {
         use crate::fm::entities::{resolve_save, CompetitionNameSource};
         let saves = saves();
-        if saves.is_empty() {
-            eprintln!("SKIPPED name-source check — set SCOUTIQ_TEST_SAVES");
+        if saves.is_empty() && skip("name-source check — set SCOUTIQ_TEST_SAVES") {
             return;
         }
         for path in saves {
@@ -581,8 +789,7 @@ mod live_save_tests {
     fn resolves_current_league_from_the_section_directory() {
         use crate::fm::entities::resolve_save;
         let saves = saves();
-        if saves.is_empty() {
-            eprintln!("SKIPPED live save checks — set SCOUTIQ_TEST_SAVES");
+        if saves.is_empty() && skip("section-directory league check — set SCOUTIQ_TEST_SAVES") {
             return;
         }
         for path in saves {
@@ -613,8 +820,7 @@ mod live_save_tests {
     fn tracks_a_club_across_a_division_change() {
         use crate::fm::entities::resolve_save;
         let saves = saves();
-        if saves.is_empty() {
-            eprintln!("SKIPPED cross-save check — set SCOUTIQ_TEST_SAVES");
+        if saves.is_empty() && skip("cross-save check — set SCOUTIQ_TEST_SAVES") {
             return;
         }
         let mut seen: std::collections::HashMap<u64, std::collections::BTreeSet<u32>> =
@@ -628,7 +834,7 @@ mod live_save_tests {
             }
         }
         let Some(macc) = seen.get(&2_000_095_665) else {
-            eprintln!("SKIPPED — no Macclesfield saves in SCOUTIQ_TEST_SAVES");
+            let _ = skip("cross-save check — no Macclesfield saves in SCOUTIQ_TEST_SAVES");
             return;
         };
         assert!(
@@ -652,8 +858,7 @@ mod live_save_tests {
     fn macclesfield_saves_are_two_league_one_and_one_championship() {
         use crate::fm::entities::resolve_save;
         let saves = saves();
-        if saves.is_empty() {
-            eprintln!("SKIPPED Macclesfield check — set SCOUTIQ_TEST_SAVES");
+        if saves.is_empty() && skip("Macclesfield check — set SCOUTIQ_TEST_SAVES") {
             return;
         }
         // Keyed on the save name the container itself carries, so the same save
@@ -675,10 +880,10 @@ mod live_save_tests {
             }
         }
         if by_save.len() < 3 {
-            eprintln!(
-                "SKIPPED — {} distinct Macclesfield saves present, need 3",
+            let _ = skip(&format!(
+                "Macclesfield check — {} distinct Macclesfield saves present, need 3",
                 by_save.len()
-            );
+            ));
             return;
         }
         let mut uids: Vec<u32> = by_save.values().copied().collect();
@@ -910,25 +1115,11 @@ mod live_league_probe {
 /// Without that variable the check skips loudly instead of passing vacuously.
 #[cfg(test)]
 mod read_only_safety {
+    use super::calibration::{saves, skip};
     use super::*;
     use std::fs::File;
     use std::io::Read;
-    use std::path::{Path, PathBuf};
-
-    fn saves() -> Vec<PathBuf> {
-        let Ok(dir) = std::env::var("SCOUTIQ_TEST_SAVES") else {
-            return Vec::new();
-        };
-        let mut out: Vec<PathBuf> = std::fs::read_dir(dir)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .map(|e| e.path())
-            .filter(|p| p.extension().is_some_and(|e| e == "fm"))
-            .collect();
-        out.sort();
-        out
-    }
+    use std::path::Path;
 
     /// `(size, modified-unix-nanos, sha-256)`.
     fn fingerprint(path: &Path) -> (u64, u128, String) {
@@ -955,8 +1146,8 @@ mod read_only_safety {
     #[test]
     fn parsing_a_save_leaves_the_file_untouched() {
         let saves = saves();
-        if saves.is_empty() {
-            eprintln!("SKIPPED read-only check — set SCOUTIQ_TEST_SAVES=<dir of .fm saves>");
+        if saves.is_empty() && skip("read-only check — set SCOUTIQ_TEST_SAVES=<dir of .fm saves>")
+        {
             return;
         }
         for path in &saves {
@@ -983,7 +1174,7 @@ mod read_only_safety {
     #[test]
     fn parses_a_save_whose_file_is_write_protected() {
         let Some(path) = saves().into_iter().next() else {
-            eprintln!("SKIPPED write-protection check — set SCOUTIQ_TEST_SAVES");
+            let _ = skip("write-protection check — set SCOUTIQ_TEST_SAVES");
             return;
         };
         // The calibration saves ship read-only (mode 444); confirm the parser

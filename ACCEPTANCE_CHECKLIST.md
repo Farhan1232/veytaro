@@ -16,8 +16,9 @@ Last run: 2026-08-11.
 
 | # | Check | Command | Result |
 | --- | --- | --- | --- |
-| A1 | Rust suite | `cargo test --release --lib` | 95 passed, 0 failed, 1 ignored |
-| A2 | …of which genuinely executed | `-- --nocapture` | **87 real, 8 vacuous** — see the warning below |
+| A1 | Rust suite | `cargo test --release --lib` | 96 passed, 0 failed, 1 ignored |
+| A2 | …of which genuinely executed | `-- --nocapture` | **87 real, 9 skipped** — see the warning below |
+| A2s | Strict real-save gate | `scripts/verify-fm-saves.sh` | **not run — no saves on this machine**, aborts at step 2 |
 | A3 | Formatting | `cargo fmt --check` | pass |
 | A4 | Research tools build behind the gate | `cargo build --release --features research-tools --bin fm_probe` / `fm_catalogue` | both build |
 | A5 | Research tools blocked without the gate | `cargo build --release --bin fm_probe` | exit 101, `requires the features: research-tools` |
@@ -28,17 +29,18 @@ Last run: 2026-08-11.
 | A10 | Bundle includes the catalogue | `dpkg -c` | `resources/competition_names/fm26.json` present |
 | A11 | Website typecheck / lint / test / build | see `website/README.md` | pass / pass / 17 passed / pass |
 
-> ### ⚠️ A2: eight tests pass without testing anything
+> ### ⚠️ A2: nine tests pass without testing anything
 >
-> `cargo test` reports 95 passing, but with no `.fm` saves on the machine these
-> eight print `SKIPPED …` and return success:
+> `cargo test` reports 96 passing, but with no `.fm` saves on the machine these
+> nine print `SKIPPED …` and return success:
 >
 > | Test | Skip reason |
 > | --- | --- |
+> | `live_save_tests::the_eight_calibration_scenarios_are_all_present` | scenario-coverage check |
 > | `live_save_tests::resolves_manager_and_club_on_calibration_saves` | live save checks |
 > | `live_save_tests::competition_uids_are_unchanged_by_name_resolution` | uid regression check |
 > | `live_save_tests::save_embedded_names_are_preferred_and_labelled` | name-source check |
-> | `live_save_tests::resolves_current_league_from_the_section_directory` | live save checks |
+> | `live_save_tests::resolves_current_league_from_the_section_directory` | section-directory league check |
 > | `live_save_tests::tracks_a_club_across_a_division_change` | cross-save check |
 > | `live_save_tests::macclesfield_saves_are_two_league_one_and_one_championship` | Macclesfield check |
 > | `read_only_safety::parsing_a_save_leaves_the_file_untouched` | read-only check |
@@ -47,6 +49,16 @@ Last run: 2026-08-11.
 > **The read-only guarantee is therefore unproven on this machine.** It is the
 > single most important claim the product makes, so treat A2 as open until the
 > calibration saves are supplied. See section D.
+>
+> Two things now stop this from being read as a pass:
+>
+> * `SCOUTIQ_TEST_SAVES_STRICT=1` turns each of those skips into a **failure**.
+>   `scripts/verify-fm-saves.sh` always sets it; CI never does, so a public
+>   checkout with no saves still goes green on the 87 tests it can actually run.
+> * `the_eight_calibration_scenarios_are_all_present` fails when the directory
+>   holds fewer than the eight known scenarios. Before it existed, every live
+>   test passed just as happily on seven saves as on eight — which is how the
+>   VVV-Venlo save went missing from the set without anything turning red.
 
 ---
 
@@ -150,32 +162,67 @@ development machine.
 
 ## D. Blocked: real-save regression tests
 
-The eight calibration saves are **not present on this machine** — a full
-filesystem sweep found no `.fm` file anywhere.
+The eight calibration saves are **not present on this machine**. Searched
+2026-08-11 across `~/Documents`, `~/Downloads`, `/mnt/storage`, `/media`,
+`/run/media` and the whole of `$HOME`: no `.fm` file anywhere, and no archive
+containing one. `/mnt/storage` exists but is empty and root-owned.
 
-To close A2, put the saves in one directory and run, from `src-tauri/`:
+To close A2, put the saves in one directory outside the repository and run, from
+the repository root:
 
 ```bash
-SCOUTIQ_TEST_SAVES="/absolute/path/to/saves" cargo test --release --lib -- --nocapture
+SCOUTIQ_TEST_SAVES="/absolute/path/to/saves" scripts/verify-fm-saves.sh
 ```
 
-Success looks like 95 passing with **no `SKIPPED` lines**.
+That is the only command that can report success honestly. Running
+`cargo test --release --lib -- --nocapture` with `SCOUTIQ_TEST_SAVES` set is a
+weaker check: it goes green on a partial set, and on none at all.
 
-From `expected_competitions()` in `src-tauri/src/fm/identity.rs`, the suite
-expects saves covering:
+### The eight scenarios
 
-| Club uid | Club | Expected competition uid |
-| --- | --- | --- |
-| 901 | Bayer Leverkusen | 22 (Bundesliga) |
-| 933 | MSV Duisburg | 23 (2. Bundesliga) |
-| 955 | TSV 1860 München | 91107111 (Regionalliga Bayern) |
-| 5103842 | Salford City | 14 (EFL League Two) |
-| 2000095665 | Macclesfield ×3 | 13 → 12 (League One, then Championship) |
+Ground truth from `fm26-research/FINDINGS.md` §1 *Verification* and §4c,
+transcribed into `calibration::SCENARIOS` in `src-tauri/src/fm/identity.rs`. A
+save is matched on what it **resolves to**, never on its filename, so the copies
+may be named anything:
+
+| # | Scenario | Club uid | Competition uid | Competition | Trailer date | Size |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Bayer Leverkusen | 901 | 22 | Bundesliga (save holds only `DBL`) | day 229 / 2025 | ~129 MB |
+| 2 | MSV Duisburg | 933 | 23 | 2. Bundesliga | day 288 / 2027 | ~386 MB |
+| 3 | TSV 1860 München | 955 | 91107111 | Regionalliga Bayern | day 248 / 2026 | ~190 MB |
+| 4 | **VVV-Venlo** | 1043 | 30 | Eerste Divisie (from the catalogue; FM 26.0.0 save has no parseable name table) | day 299 / 2025 | ~135 MB |
+| 5 | Salford City | 5103842 | 14 | EFL League Two, pre-season | day 204 / 2025 | ~113 MB |
+| 6 | Macclesfield, in season | 2000095665 | 13 | EFL League One | day 131 / 2030 | ~641 MB |
+| 7 | Macclesfield, promotion just won | 2000095665 | 13 | EFL League One | **null** (FM's 1/1900) | ~639 MB |
+| 8 | Macclesfield, pre-season | 2000095665 | 12 | EFL Championship | day 201 / 2030 | ~624 MB |
+
+Filenames recorded in `src-tauri/resources/competition_names/fm26.json`
+(`sourceSaves`) when the catalogue was generated from these same eight saves —
+useful for identifying a copy, and used by nothing at runtime:
+
+```text
+Bayer Leverkusen_Bundesliga.fm
+MSV Duisburg_Bundesliga.fm
+TSV 1860 München_Regionalliga_Bayern.fm
+VVV Venlo_Keuken_Kampioen_Divisie.fm
+Salford_EFL_League_Two.fm
+Niclas Krieck – Macclesfield.fm
+Macclesfield_Direkt_nach_Aufstieg.fm
+Macclesfield_Vorbereitung_EFL_Championship.fm
+```
+
+### Handling the saves
+
+They are client data. Copy them; never move, rename, resave, recompress or
+open them in Football Manager, and never place them inside the repository —
+`scripts/verify-fm-saves.sh` refuses a directory in the working tree, and `*.fm`
+is git-ignored in both this repository and its parent.
 
 The saves are only ever opened with `File::open`; the run cannot modify them.
 Record size, mtime and SHA-256 before and after anyway — that is exactly what
-`parsing_a_save_leaves_the_file_untouched` asserts, and having your own copy of
-the numbers makes the guarantee checkable independently.
+`parsing_a_save_leaves_the_file_untouched` asserts, and what the script repeats
+from outside the test process, so the guarantee does not rest on the parser
+grading its own homework.
 
 ---
 
