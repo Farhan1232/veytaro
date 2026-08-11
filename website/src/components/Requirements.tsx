@@ -43,13 +43,13 @@ export function Requirements() {
 
   return (
     <section className="section" id={t.id} aria-labelledby="req-heading">
-      <div className="page">
-        <div className="section__head reveal">
+      <div className="container">
+        <div className="section__head">
           <h2 id="req-heading">{t.heading}</h2>
           <p>{t.description}</p>
         </div>
 
-        <div className="req-grid reveal">
+        <div className="req-grid">
           <Group platform="windows" data={t.windows} />
           <Group platform="macos" data={t.macos} />
         </div>

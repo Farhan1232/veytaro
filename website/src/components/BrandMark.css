@@ -1,0 +1,7 @@
+.brand-mark {
+  display: block;
+  flex: none;
+  /* width/height attributes hold the aspect ratio; height:auto lets the CSS
+     width in the header and footer win without distorting it. */
+  height: auto;
+}

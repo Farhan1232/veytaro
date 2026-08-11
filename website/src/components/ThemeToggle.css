@@ -1,0 +1,56 @@
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Square and at least 44px, so it is a comfortable touch target on a phone. */
+  width: var(--control-h);
+  height: var(--control-h);
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out),
+    color var(--duration) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .theme-toggle:hover {
+    background: var(--surface-3);
+    border-color: var(--brand-border);
+    color: var(--text);
+  }
+}
+
+/* The two icons are stacked in one 20px box and cross-faded. */
+.theme-toggle__icons {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.theme-toggle__icon {
+  position: absolute;
+  inset: 0;
+  width: 20px;
+  height: 20px;
+  transition: opacity var(--duration) var(--ease-out),
+    transform var(--duration) var(--ease-out);
+}
+
+/* Dark theme: offer the sun (the click leads to light). */
+.theme-toggle__icon--sun { opacity: 1; transform: rotate(0) scale(1); }
+.theme-toggle__icon--moon { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+
+/* Light theme: offer the moon. */
+[data-theme="light"] .theme-toggle__icon--sun {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.6);
+}
+[data-theme="light"] .theme-toggle__icon--moon {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}

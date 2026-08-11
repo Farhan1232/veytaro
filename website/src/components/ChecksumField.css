@@ -1,0 +1,77 @@
+.checksum {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.checksum__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.checksum__label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.checksum__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  /* 32px tall but with generous side padding — it sits inside a label row, so
+     a full 44px control would unbalance the card. The hit area is widened
+     below instead. */
+  height: 32px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out),
+    background-color var(--duration) var(--ease-out);
+}
+
+/* Extends the tap target to 44px without changing the drawn size. */
+.checksum__copy::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+.checksum__copy { position: relative; }
+
+@media (hover: hover) {
+  .checksum__copy:hover {
+    color: var(--text);
+    border-color: var(--brand-border);
+    background: var(--surface-3);
+  }
+}
+
+.checksum__copy.is-copied {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.checksum__copy svg { flex: none; }
+
+.checksum__value {
+  display: block;
+  color: var(--text-muted);
+  /* 64 hex characters must wrap rather than widen the card. */
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  user-select: all;
+}

@@ -1,0 +1,263 @@
+/* Documentation layout: a contents rail beside one reading column. */
+
+.docs-hero {
+  position: relative;
+  padding: clamp(40px, 6vw, 72px) 0 clamp(28px, 4vw, 40px);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.docs-hero::before {
+  content: "";
+  position: absolute;
+  inset: -50% -20% auto -20%;
+  height: 420px;
+  background: var(--hero-glow);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.docs-hero > .container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+}
+
+.docs-hero__version {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+/* --- Two-column shell ---------------------------------------------------- */
+
+.docs-layout {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: start;
+  padding-top: var(--sp-9);
+  padding-bottom: var(--section-gap);
+}
+
+.docs-body {
+  min-width: 0;
+  /* Prose sits at a comfortable measure regardless of how wide the page is. */
+  max-width: 760px;
+}
+
+/* --- Sections ------------------------------------------------------------ */
+
+.docs-section {
+  padding-top: var(--sp-4);
+  scroll-margin-top: calc(var(--header-h) + var(--sp-6));
+}
+
+.docs-section + .docs-section {
+  margin-top: var(--sp-10);
+  padding-top: var(--sp-9);
+  border-top: 1px solid var(--border);
+}
+
+.docs-section > h2 {
+  margin-bottom: var(--sp-4);
+  font-size: var(--fs-h2);
+}
+
+.docs-section > h3 { margin-bottom: var(--sp-2); }
+
+.docs-section > p {
+  color: var(--text-muted);
+  max-width: 70ch;
+}
+
+.docs-section > p + p { margin-top: var(--sp-3); }
+
+/* Vertical rhythm between a paragraph and whatever block follows it. */
+.docs-section > * + .docs-cards,
+.docs-section > * + .docs-split,
+.docs-section > * + .docs-numbered,
+.docs-section > * + .docs-list,
+.docs-section > * + .docs-verify,
+.docs-section > * + .callout,
+.docs-section > * + .disclosure,
+.docs-section > * + .docs-help__actions {
+  margin-top: var(--sp-6);
+}
+
+/* --- Overview cards ------------------------------------------------------ */
+
+.docs-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-4);
+  list-style: none;
+}
+
+.docs-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.docs-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.docs-card h3 { font-size: var(--fs-base); }
+.docs-card p { color: var(--text-muted); font-size: var(--fs-sm); }
+
+/* --- Side-by-side panels (Windows / macOS) ------------------------------- */
+
+.docs-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+.docs-panel {
+  min-width: 0;
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.docs-panel__title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  font-size: var(--fs-base);
+}
+.docs-panel__title svg { flex: none; color: var(--text-muted); }
+
+.docs-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding-left: var(--sp-5);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.docs-steps li::marker { color: var(--brand); font-weight: 600; }
+
+/* --- Definition lists ---------------------------------------------------- */
+
+.docs-dl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0;
+}
+
+.docs-dl dt {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.docs-dl dd {
+  margin: 0;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+
+/* --- Verification blocks ------------------------------------------------- */
+
+.docs-verify + .docs-verify { margin-top: var(--sp-6); }
+
+.docs-verify__expected {
+  margin: var(--sp-3) 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+/* --- Numbered steps ------------------------------------------------------ */
+
+.docs-numbered {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  list-style: none;
+}
+
+.docs-numbered > li { display: flex; gap: var(--sp-4); }
+
+.docs-numbered h3 { margin-bottom: var(--sp-1); font-size: var(--fs-base); }
+.docs-numbered p { color: var(--text-muted); font-size: var(--fs-sm); }
+
+.docs-numbered__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border: 1px solid var(--brand-border);
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+/* --- Plain list ---------------------------------------------------------- */
+
+.docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding-left: var(--sp-5);
+  list-style: disc;
+  color: var(--text-muted);
+}
+.docs-list li::marker { color: var(--brand); }
+
+/* --- Help ---------------------------------------------------------------- */
+
+.docs-help__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+/* --- Narrow layouts ------------------------------------------------------ */
+
+@media (max-width: 1000px) {
+  .docs-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-8);
+  }
+  .docs-body { max-width: none; }
+}
+
+@media (max-width: 560px) {
+  .docs-help__actions .btn { flex: 1 1 100%; }
+}

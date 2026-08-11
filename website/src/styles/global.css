@@ -1,5 +1,9 @@
 @import "./tokens.css";
 
+/* ==========================================================================
+   Reset and base
+   ========================================================================== */
+
 *,
 *::before,
 *::after {
@@ -7,210 +11,363 @@
 }
 
 html {
-  scroll-behavior: smooth;
-  /* Anchored sections must clear the sticky header. */
-  scroll-padding-top: 96px;
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  /* Anchor targets clear the sticky header. */
+  scroll-padding-top: calc(var(--header-h) + 16px);
 }
 
 body {
   margin: 0;
-  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: var(--fs-base);
   line-height: 1.6;
-  color: var(--text-primary);
-  background:
-    radial-gradient(1200px 600px at 12% -10%, var(--accent-ambient), transparent 55%),
-    radial-gradient(900px 500px at 90% 0%, var(--info-ambient), transparent 50%),
-    var(--bg-base);
-  /* Deliberately not `background-attachment: fixed`: the ambient glow belongs
-     to the top of the document and should scroll away, and fixed attachment
-     causes repaint jank on iOS Safari for a page this tall. */
-  background-repeat: no-repeat;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Nothing may ever scroll the page sideways. */
+  /* Nothing may cause a sideways scrollbar at any width. */
   overflow-x: hidden;
+  transition: background-color var(--duration) var(--ease-out),
+    color var(--duration) var(--ease-out);
 }
 
 h1,
 h2,
 h3,
 h4 {
+  margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
-  margin: 0;
-  text-wrap: balance;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--text);
 }
 
-p {
-  margin: 0;
-  text-wrap: pretty;
-}
+h1 { font-size: var(--fs-h1); }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h3); }
 
-ul,
-ol {
-  margin: 0;
-  padding: 0;
-}
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-img,
-svg {
+img, svg {
   display: block;
   max-width: 100%;
 }
+img { height: auto; }
 
-img {
-  height: auto;
+a {
+  color: var(--brand);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+a:hover { color: var(--brand-hover); }
+
+/* A link sitting inside a block of prose has to be distinguishable by more than
+   colour, or someone who cannot separate the two hues sees no link at all.
+   Navigation lists, buttons and cards are excluded: those are self-evidently
+   interactive from their position and shape, and underlining them would turn
+   the header and footer into a thicket of rules. */
+.prose p a,
+.prose li a,
+.lede a,
+.steps__footnote a,
+.disclosure__a a,
+.section__head p a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
 }
 
 button {
   font: inherit;
   color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
-code,
-.mono {
+code, kbd, pre {
   font-family: var(--font-mono);
-  font-size: 0.85em;
+  font-size: 0.875em;
 }
 
-::selection {
-  background: rgba(57, 255, 103, 0.28);
-  color: var(--text-primary);
-}
-
-/* Every interactive element keeps a visible, high-contrast focus ring. */
+/* --- Focus ----------------------------------------------------------------
+   Pointer users never see a ring; keyboard users always do. */
+:focus { outline: none; }
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
-/* Visually hidden but available to assistive technology. */
-.sr-only {
-  position: absolute;
+/* ==========================================================================
+   Layout helpers
+   ========================================================================== */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.page__main { flex: 1; }
+
+.container {
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter);
+}
+.container--narrow { max-width: 780px; }
+
+.section { padding: var(--section-gap) 0; }
+.section--tight { padding: calc(var(--section-gap) * 0.62) 0; }
+.section--alt { background: var(--surface); }
+
+.section__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: 660px;
+  margin-bottom: var(--sp-8);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  align-self: flex-start;
+  padding: 5px 12px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-pill);
+  background: var(--brand-softer);
+  color: var(--brand);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.lede {
+  font-size: var(--fs-lg);
+  color: var(--text-muted);
+  max-width: 62ch;
+}
+
+.muted { color: var(--text-muted); }
+.subtle { color: var(--text-subtle); }
+.text-sm { font-size: var(--fs-sm); }
+.text-xs { font-size: var(--fs-xs); }
+
+.stack { display: flex; flex-direction: column; gap: var(--sp-4); }
+.stack--lg { gap: var(--sp-6); }
+
+/* ==========================================================================
+   Accessibility helpers
+   ========================================================================== */
+
+.visually-hidden {
+  position: absolute !important;
   width: 1px;
   height: 1px;
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
+  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
 }
 
 .skip-link {
   position: absolute;
-  left: 12px;
-  top: -60px;
-  z-index: 100;
-  padding: 10px 16px;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: var(--text-inverse);
+  top: -100px;
+  left: var(--sp-4);
+  z-index: 200;
+  padding: var(--sp-3) var(--sp-5);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   font-weight: 600;
-  transition: top var(--duration-fast) var(--ease-out);
+  transition: top var(--duration) var(--ease-out);
 }
+.skip-link:focus { top: var(--sp-4); }
 
-.skip-link:focus {
-  top: 12px;
-  text-decoration: none;
-}
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
 
-.page {
-  width: 100%;
-  max-width: var(--page-max);
-  margin-inline: auto;
-  padding-inline: var(--page-gutter);
-}
-
-.section {
-  padding-block: var(--section-gap);
-  scroll-margin-top: 88px;
-}
-
-.section__head {
-  max-width: 640px;
-  margin-bottom: 44px;
-}
-
-.section__head h2 {
-  font-size: clamp(28px, 4vw, 38px);
-}
-
-.section__head p {
-  margin-top: 14px;
-  color: var(--text-secondary);
-}
-
-.eyebrow {
+.btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--accent-border);
-  background: var(--accent-softer);
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: var(--control-h);
+  padding: 0 var(--sp-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out),
+    color var(--duration) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
-/* --- Entrance animation ------------------------------------------------- */
+.btn svg { flex: none; width: 18px; height: 18px; }
 
-@keyframes reveal-up {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
+.btn--lg {
+  min-height: var(--control-h-lg);
+  padding: 0 var(--sp-6);
+  font-size: var(--fs-base);
+}
+.btn--block { display: flex; width: 100%; }
+
+/* Primary — one dominant action per section. */
+.btn--primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-contrast);
+  box-shadow: var(--shadow-sm);
+}
+.btn--secondary {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+/* Hover changes the label colour as well as the surface, so the state is
+   obvious rather than a subtle shift in background. The primary button inverts
+   outright — panel, green text, green rule — which is the clearest signal
+   available and still clears AA in both themes.
+
+   Guarded on (hover: hover) because a tap on a phone must not leave a button
+   stuck looking hovered. */
+@media (hover: hover) {
+  .btn--primary:hover:not(:disabled) {
+    background: var(--surface-3);
+    border-color: var(--brand);
+    color: var(--brand);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
-  to {
-    opacity: 1;
-    transform: none;
+  .btn--secondary:hover:not(:disabled) {
+    background: var(--surface-3);
+    border-color: var(--brand);
+    color: var(--brand);
+    transform: translateY(-1px);
+  }
+  .btn--ghost:hover:not(:disabled) {
+    background: var(--surface-3);
+    color: var(--brand);
   }
 }
 
-/*
-  Entrance animation is strictly additive: `.reveal` has no styles of its own,
-  so content is fully visible whenever the animation does not run. It is applied
-  only where scroll-driven timelines are supported AND motion is welcome —
-  otherwise a browser without `view()` support (or a paused timeline) would
-  leave every section stuck at `opacity: 0`.
-*/
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .reveal {
-      animation: reveal-up 620ms var(--ease-out) both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 22%;
-    }
+/* The press is signalled by the lift alone. A separate active background would
+   fight the inverted hover on a pointer, and on a touch screen — where there is
+   no hover — it would flash a colour the button never otherwise shows. */
+.btn:active:not(:disabled) { transform: translateY(1px); }
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Loading keeps the box the same size — the label is hidden, not removed. */
+.btn.is-loading { position: relative; color: transparent !important; pointer-events: none; }
+.btn.is-loading > * { visibility: hidden; }
+.btn.is-loading::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  color: var(--brand-contrast);
+  visibility: visible;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==========================================================================
+   Cards
+   ========================================================================== */
+
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--duration) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out),
+    transform var(--duration) var(--ease-out),
+    background-color var(--duration) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .card--interactive:hover {
+    transform: translateY(-3px);
+    border-color: var(--brand-border);
+    box-shadow: var(--shadow-md);
   }
 }
 
-/*
-  Reduced motion: no smooth scrolling, and transitions collapse to an
-  imperceptible duration rather than being removed (so :hover/:focus state
-  changes still apply).
-*/
+/* ==========================================================================
+   Code and checksums
+   ========================================================================== */
+
+.code {
+  display: block;
+  padding: var(--sp-4);
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.7;
+  /* Commands wrap rather than scroll. A verification command that runs off the
+     edge of its box reads as truncated, and someone copying it by hand would
+     miss the tail — the whole point is that they can compare it exactly.
+     overflow-x stays as a backstop for an unbreakable token. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* A 64-character hash must never widen the layout. */
+.hash {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+/* ==========================================================================
+   Motion preferences
+   ========================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
+  html { scroll-behavior: auto; }
   *,
   *::before,
   *::after {
@@ -219,4 +376,7 @@ code,
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* Transforms are removed rather than animated so nothing is left offset. */
+  .btn:hover,
+  .card--interactive:hover { transform: none !important; }
 }

@@ -1,94 +1,116 @@
-import { HERO_SCREENSHOT } from "../config/site";
+import { RELEASE, assetFor, hasAnyDownload } from "../config/releases";
 import { content } from "../content";
+import { formatBytes } from "../lib/format";
 import type { DetectedOs } from "../lib/osDetection";
-import { DownloadButton } from "./DownloadButton";
-import { AppleIcon, WindowsIcon } from "./Icons";
+import { AppleIcon, ArrowRightIcon, CheckIcon, DownloadIcon, WindowsIcon } from "./Icons";
 import "./Hero.css";
 
-interface HeroProps {
-  os: DetectedOs;
-}
-
-export function Hero({ os }: HeroProps) {
+/**
+ * Full-bleed photographic hero.
+ *
+ * The background is a real photograph of a floodlit pitch at night — chosen
+ * because it is CC0, shows no club crest, sponsor board, kit or identifiable
+ * person, and its lit green surface is the brand green. A scrim sits between
+ * the photo and the copy so the text meets contrast requirements regardless of
+ * what the image is doing behind it.
+ *
+ * The primary download is aimed at the detected platform. Detection only
+ * decides which installer the button points at; both stay one click away in the
+ * download section, and the button is never a dead link — with no build for the
+ * detected platform, or no detection at all, it links to that section instead.
+ */
+export function Hero({ os }: { os: DetectedOs }) {
   const t = content.hero;
-  // Only a positive detection promotes one platform. Mobile and unknown
-  // visitors get both options at equal weight.
-  const recommended = os === "windows" || os === "macos" ? os : null;
-  const secondary = recommended === "windows" ? "macos" : "windows";
+  const d = content.downloads;
+
+  // "unknown" means detection found nothing; "mobile" has nothing to install.
+  const target = os === "windows" || os === "macos" ? os : null;
+  const asset = target ? assetFor(target) : null;
+  const directDownload = asset?.status === "available" ? asset : null;
+  const size = directDownload ? formatBytes(directDownload.sizeBytes) : null;
+  const PlatformIcon = target === "macos" ? AppleIcon : WindowsIcon;
 
   return (
-    <section className="hero" id="top">
-      <div className="page hero__inner">
-        <div className="hero__content">
-          <p className="eyebrow">{t.eyebrow}</p>
+    <section className="hero" aria-labelledby="hero-heading">
+      {/* Decorative: the heading beside it already says what the page is, so
+          an alt description here would only be noise in a screen reader. */}
+      <picture className="hero__media">
+        <source
+          media="(max-width: 640px)"
+          srcSet="/img/pitch-night-760.webp"
+          type="image/webp"
+        />
+        <source
+          media="(max-width: 1200px)"
+          srcSet="/img/pitch-night-1100.webp"
+          type="image/webp"
+        />
+        <img
+          src="/img/pitch-night-1600.webp"
+          alt=""
+          width="1600"
+          height="1000"
+          /* Above the fold and the largest paint on the page: fetch it early
+             rather than letting it queue behind the bundle. */
+          fetchPriority="high"
+          decoding="async"
+        />
+      </picture>
+      <div className="hero__scrim" aria-hidden="true" />
 
-          <h1 className="hero__heading">
-            {t.headingLead}{" "}
-            <span className="hero__heading-accent">{t.headingAccent}</span>
+      <div className="container">
+        <div className="hero__inner">
+          <p className="eyebrow eyebrow--onPhoto">{t.eyebrow}</p>
+
+          <h1 id="hero-heading" className="hero__heading">
+            {t.headingLead} <span className="hero__accent">{t.headingAccent}</span>
           </h1>
 
           <p className="hero__description">{t.description}</p>
 
           <div className="hero__actions">
-            {recommended ? (
-              <>
-                <div className="hero__primary">
-                  <DownloadButton
-                    platform={recommended}
-                    variant="primary"
-                    labelSuffix={content.downloads.platforms[recommended].name}
-                  />
-                  <span className="hero__hint">{t.primaryHint}</span>
-                </div>
-                <a className="hero__alt-link" href="#download">
-                  {recommended === "windows" ? (
-                    <AppleIcon size={17} />
-                  ) : (
-                    <WindowsIcon size={17} />
-                  )}
-                  {content.downloads.platforms[secondary].name}
-                </a>
-              </>
+            {directDownload ? (
+              <a
+                className="btn btn--primary btn--lg"
+                href={directDownload.path}
+                download={directDownload.filename}
+              >
+                <DownloadIcon size={18} />
+                {`${t.primaryCta} — ${d.platforms[target!].name}`}
+              </a>
             ) : (
-              <div className="hero__both">
-                <DownloadButton
-                  platform="windows"
-                  variant="primary"
-                  labelSuffix={content.downloads.platforms.windows.name}
-                />
-                <DownloadButton
-                  platform="macos"
-                  variant="secondary"
-                  labelSuffix={content.downloads.platforms.macos.name}
-                />
-              </div>
+              <a className="btn btn--primary btn--lg" href={`#${d.id}`}>
+                <DownloadIcon size={18} />
+                {t.primaryCta}
+              </a>
             )}
+
+            <a className="btn btn--onPhoto btn--lg" href={`#${content.howItWorks.id}`}>
+              {t.secondaryCta}
+              <ArrowRightIcon size={18} />
+            </a>
           </div>
 
-          <p className="hero__note">{t.platformNote}</p>
-        </div>
-
-        <div className="hero__visual">
-          {HERO_SCREENSHOT ? (
-            <img
-              className="hero__screenshot"
-              src={HERO_SCREENSHOT.src}
-              alt={t.screenshotAlt}
-              width={HERO_SCREENSHOT.width}
-              height={HERO_SCREENSHOT.height}
-              loading="eager"
-            />
-          ) : (
-            <img
-              className="hero__mark"
-              src="/veytaro-mark.png"
-              alt={t.markAlt}
-              width={512}
-              height={356}
-              loading="eager"
-              fetchPriority="high"
-            />
+          {/* Release facts, read from config/releases.ts. Never a download count
+              or a rating — neither of those exists. */}
+          {hasAnyDownload() && (
+            <p className="hero__meta">
+              {target && <PlatformIcon size={16} />}
+              <span>
+                {d.versionLabel} {RELEASE.version}
+                {size ? ` · ${size}` : ""} · {d.signingUnsigned}
+              </span>
+            </p>
           )}
+
+          <ul className="hero__assurances">
+            {t.assurances.map((item) => (
+              <li key={item}>
+                <CheckIcon size={16} />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>

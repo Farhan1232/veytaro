@@ -1,61 +1,118 @@
 .site-footer {
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-shell);
-  padding-block: 44px;
+  padding: var(--sp-10) 0 var(--sp-8);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 
 .site-footer__inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  gap: var(--sp-8) var(--sp-6);
 }
+
+/* --- Brand column -------------------------------------------------------- */
 
 .site-footer__brand {
   display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.site-footer__logo {
+  display: inline-flex;
   align-items: center;
-  gap: 13px;
-}
-
-.site-footer__mark {
-  width: 26px;
-  height: auto;
-}
-
-.site-footer__name {
+  gap: var(--sp-2);
+  color: var(--text);
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
+.site-footer__logo:hover { color: var(--text); }
+.site-footer__logo img { width: 28px; height: auto; flex: none; }
 
-.site-footer__tagline {
-  margin-top: 3px;
-  color: var(--text-muted);
-  font-size: 14px;
+.site-footer__tagline { color: var(--text-muted); font-size: var(--fs-sm); }
+.site-footer__availability { color: var(--text-subtle); font-size: var(--fs-xs); }
+
+/* --- Link columns -------------------------------------------------------- */
+
+.site-footer__col { min-width: 0; }
+
+.site-footer__heading {
+  margin-bottom: var(--sp-3);
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
 }
 
-.site-footer__meta {
+.site-footer__col ul {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  font-size: 14px;
+  gap: var(--sp-2);
+  list-style: none;
+}
+
+.site-footer__col a {
   color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.site-footer__col a:hover { color: var(--brand-hover); }
+
+/* The footer repeats the header's route labels, so it needs the same guard
+   against a browser translation handing back lowercase words.
+
+   Scoped to links inside the lists, never to `.site-footer__col a` as a whole:
+   the support address is a direct child of a column, and `capitalize` breaks on
+   the "@" and "." word boundaries, turning it into Niclaskrieck@Gmail.Com. */
+.site-footer__col ul a {
+  text-transform: capitalize;
 }
 
-.site-footer__availability {
-  color: var(--text-secondary);
+.site-footer__support {
+  margin-bottom: var(--sp-3);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
 }
 
-.site-footer__links {
+.site-footer__mail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--brand);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  /* The address is long; let it wrap instead of widening the column. */
+  overflow-wrap: anywhere;
+}
+.site-footer__mail svg { flex: none; }
+
+/* --- Legal strip --------------------------------------------------------- */
+
+.site-footer__legal {
   display: flex;
-  gap: 18px;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-9);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--border);
+  color: var(--text-subtle);
+  font-size: var(--fs-xs);
+  max-width: var(--page-max);
 }
 
-@media (max-width: 640px) {
-  .site-footer__meta {
-    align-items: flex-start;
-  }
+.site-footer__copy { margin-top: var(--sp-2); }
+
+/* --- Narrow layouts ------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .site-footer__inner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .site-footer__brand { grid-column: 1 / -1; }
+}
+
+@media (max-width: 480px) {
+  .site-footer__inner { grid-template-columns: minmax(0, 1fr); gap: var(--sp-7); }
 }

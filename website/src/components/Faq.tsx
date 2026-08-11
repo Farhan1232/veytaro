@@ -1,32 +1,19 @@
 import { content } from "../content";
-import { ChevronIcon } from "./Icons";
-import "./Faq.css";
+import { Disclosure } from "./Disclosure";
 
-/**
- * Native <details>/<summary>: keyboard-operable and screen-reader friendly
- * without any JavaScript, and it still works if the bundle fails to load.
- */
 export function Faq() {
   const t = content.faq;
 
   return (
-    <section className="section" id={t.id} aria-labelledby="faq-heading">
-      <div className="page">
-        <div className="section__head reveal">
+    <section className="section section--alt" id={t.id} aria-labelledby="faq-heading">
+      <div className="container">
+        <div className="section__head">
+          <p className="eyebrow">{t.eyebrow}</p>
           <h2 id="faq-heading">{t.heading}</h2>
+          <p className="lede">{t.description}</p>
         </div>
 
-        <div className="faq__list reveal">
-          {t.items.map((item) => (
-            <details className="faq__item" key={item.q}>
-              <summary className="faq__q">
-                <span>{item.q}</span>
-                <ChevronIcon size={18} className="faq__chevron" />
-              </summary>
-              <p className="faq__a">{item.a}</p>
-            </details>
-          ))}
-        </div>
+        <Disclosure items={t.items} />
       </div>
     </section>
   );

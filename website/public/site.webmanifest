@@ -1,13 +1,13 @@
 {
   "name": "Veytaro",
   "short_name": "Veytaro",
-  "description": "Football Manager Assistant für Windows und macOS",
+  "description": "Dein Spielstand. Klar analysiert. Desktop-Anwendung für Windows und macOS.",
   "lang": "de",
   "start_url": "/",
   "scope": "/",
   "display": "browser",
-  "background_color": "#08090b",
-  "theme_color": "#08090b",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
   "icons": [
     {
       "src": "/icon-192.png",

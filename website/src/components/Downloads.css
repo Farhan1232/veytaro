@@ -1,159 +1,130 @@
-.dl-grid {
+.downloads__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--sp-5);
+  align-items: start;
 }
 
-.dl-card {
+.downloads__notice {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: var(--sp-6);
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-md);
+  background: var(--brand-softer);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.downloads__hint {
+  margin-top: var(--sp-6);
+  color: var(--text-subtle);
+  font-size: var(--fs-sm);
+}
+
+/* --- Card ---------------------------------------------------------------- */
+
+.download-card {
   display: flex;
   flex-direction: column;
-  padding: 30px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-default);
-  background:
-    linear-gradient(180deg, var(--bg-overlay-02), transparent 40%),
-    var(--bg-elevated);
-  transition:
-    border-color var(--duration) var(--ease-out),
-    transform var(--duration) var(--ease-out);
+  gap: var(--sp-5);
+  padding: var(--sp-6);
+  min-width: 0;
 }
 
-.dl-card:hover {
-  border-color: var(--border-strong);
-  transform: translateY(-2px);
+/* The recommendation is carried by the badge text as well as the border, so it
+   does not depend on colour alone. */
+.download-card.is-recommended {
+  border-color: var(--brand-border);
+  box-shadow: var(--shadow-md);
 }
 
-/* The detected platform is emphasised with the brand edge, not with colour
-   alone — the badge repeats the meaning in text. */
-.dl-card.is-recommended {
-  border-color: var(--accent-border);
-  box-shadow: 0 0 0 1px var(--accent-border), var(--shadow-card);
-}
-
-.dl-card__top {
+.download-card__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--sp-4);
 }
 
-.dl-card__icon {
-  display: grid;
-  place-items: center;
+.download-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 52px;
   height: 52px;
+  flex: none;
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-default);
-  background: var(--bg-surface);
-  color: var(--text-primary);
+  background: var(--surface-3);
+  color: var(--text);
 }
 
-.dl-card.is-recommended .dl-card__icon {
-  border-color: var(--accent-border);
-  color: var(--accent);
+.download-card__titles { min-width: 0; margin-right: auto; }
+
+.download-card__name { font-size: var(--fs-h3); }
+
+.download-card__req {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
 }
 
-.dl-card__badge {
-  padding: 5px 12px;
+.download-card__badge {
+  flex: none;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border: 1px solid var(--brand-border);
   border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-border);
-  color: var(--accent);
-  font-size: 12px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: var(--fs-xs);
   font-weight: 600;
   white-space: nowrap;
 }
 
-.dl-card__title {
-  font-size: 21px;
-}
+/* --- Facts --------------------------------------------------------------- */
 
-.dl-card__req {
-  margin-top: 6px;
-  color: var(--text-secondary);
-  font-size: 15px;
-}
-
-.dl-card__meta {
-  margin: 24px 0 0;
+.download-card__facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 20px;
-  padding-top: 22px;
-  border-top: 1px solid var(--border-subtle);
+  gap: var(--sp-4);
+  margin: 0;
 }
 
-.dl-card__meta dt {
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.dl-card__meta dd {
-  margin: 4px 0 0;
-  font-size: 15px;
-  color: var(--text-primary);
-  overflow-wrap: anywhere;
-}
-
-.dl-card__pending {
-  color: var(--text-muted);
-  font-style: italic;
-  font-size: 14px;
-}
-
-.dl-card__action {
-  margin-top: auto;
-  padding-top: 26px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.dl-card__note {
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--warning);
-}
-
-.dl-card__checksum {
-  margin-top: 20px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border-subtle);
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.dl-card__checksum-label {
-  display: block;
-  margin-bottom: 6px;
+.download-card__facts dt {
+  margin-bottom: 2px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
 }
 
-.dl-card__checksum code {
-  /* A 64-character hash must wrap instead of widening the page. */
-  display: block;
+.download-card__facts dd {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text);
   overflow-wrap: anywhere;
-  line-height: 1.5;
-  color: var(--text-secondary);
 }
 
-@media (max-width: 560px) {
-  .dl-card {
-    padding: 24px 20px;
-  }
+.download-card__nochecksum,
+.download-card__note {
+  color: var(--text-subtle);
+  font-size: var(--fs-sm);
+}
 
-  .dl-card__meta {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
+.download-card__file {
+  margin-top: calc(var(--sp-2) * -1);
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
 
-  .dl-card__action {
-    align-items: stretch;
-  }
+/* A 320px minimum column plus 2×24px padding overflows a 320px viewport. */
+@media (max-width: 400px) {
+  .downloads__grid { grid-template-columns: minmax(0, 1fr); }
+  .download-card { padding: var(--sp-5); gap: var(--sp-4); }
+  .download-card__facts { gap: var(--sp-3); }
+  .download-card__icon { width: 44px; height: 44px; }
 }

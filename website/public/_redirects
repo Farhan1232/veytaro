@@ -1,0 +1,14 @@
+# Cloudflare Pages routing rules.
+#
+# The site is a single-page app with client-side routes (/ueber-veytaro,
+# /dokumentation, /bedingungen, /kontakt). Without this rule, loading or
+# refreshing one of those URLs asks the static host for a file that does not
+# exist and returns 404 before React ever runs.
+#
+# Rewriting to index.html with status 200 (not a 301/302 redirect) keeps the
+# original URL in the address bar, so the router still sees the right path.
+#
+# Real files — /downloads/*, /og-image.png, /favicon.ico and so on — are served
+# directly, because Cloudflare Pages matches assets on disk before it applies
+# these rules.
+/*    /index.html   200

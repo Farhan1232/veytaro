@@ -1,170 +1,183 @@
 .hero {
-  padding-block: clamp(48px, 7vw, 92px) clamp(56px, 8vw, 104px);
-  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  /* Tall enough to let the photograph read as a scene, capped so the download
+     section is still reachable without a long scroll on a laptop. */
+  min-height: min(76vh, 680px);
+  padding: clamp(64px, 9vw, 120px) 0 clamp(56px, 8vw, 96px);
+  /* The header sits over the hero, so the photo starts behind it. */
+  margin-top: calc(var(--header-h) * -1);
+  padding-top: calc(var(--header-h) + clamp(48px, 7vw, 92px));
+  overflow: hidden;
 }
+
+/* --- Photograph ---------------------------------------------------------- */
+
+.hero__media,
+.hero__media img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hero__media img {
+  object-fit: cover;
+  /* Keeps the lit pitch in frame as the viewport narrows. */
+  object-position: 50% 55%;
+}
+
+/* The scrim has to do two contradictory jobs: keep the copy readable, and let
+   the photograph still read as a photograph. So it is directional — heavy on
+   the left where the text sits, light on the right where the floodlit pitch is
+   the whole point of the image — rather than a flat wash over everything. */
+.hero__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    /* Left-to-right: dark enough behind the copy, then clears so the lit pitch
+       on the right is actually visible. */
+    linear-gradient(
+      95deg,
+      rgba(6, 12, 9, 0.90) 0%,
+      rgba(6, 12, 9, 0.72) 32%,
+      rgba(6, 12, 9, 0.30) 62%,
+      rgba(6, 12, 9, 0.10) 100%
+    ),
+    /* Under the header, so the nav has something to sit on. */
+    linear-gradient(180deg, rgba(6, 12, 9, 0.5) 0%, rgba(6, 12, 9, 0) 26%),
+    /* A light foot that blends into the next section without swallowing the
+       floodlights, which are the brightest part of the frame. */
+    linear-gradient(0deg, rgba(6, 12, 9, 0.55) 0%, rgba(6, 12, 9, 0) 20%);
+}
+
+/* --- Copy ---------------------------------------------------------------- */
 
 .hero__inner {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-  align-items: center;
-  gap: clamp(32px, 4vw, 56px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-5);
+  /* Sits inside .container, so it lines up with every section below instead of
+     centring itself in the page. */
+  max-width: 660px;
 }
 
-/*
-  German compounds here are long ("Football-Manager-Spielstände"), so the
-  headline is capped well below the column width to keep it to two lines
-  instead of breaking at every hyphen.
-*/
 .hero__heading {
-  margin-top: 22px;
-  font-size: clamp(31px, 4.2vw, 48px);
-  line-height: 1.12;
-  hyphens: manual;
+  font-size: var(--fs-hero);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  /* Fixed light, not --text: the photograph behind is dark in both themes, so
+     the light theme's near-black heading colour would disappear into it. */
+  color: #f0f5f2;
+  /* The photo behind is dark but not uniform; a soft shadow guarantees the
+     headline separates from it even where the pitch is brightest. */
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5);
 }
 
-.hero__heading-accent {
-  color: var(--accent);
+.hero__accent {
+  background: linear-gradient(100deg, var(--brand) 0%, var(--lime) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero__accent { color: var(--brand); -webkit-text-fill-color: currentColor; }
 }
 
 .hero__description {
-  margin-top: 20px;
-  max-width: 56ch;
-  font-size: clamp(16px, 1.5vw, 18px);
-  color: var(--text-secondary);
+  font-size: var(--fs-lg);
+  /* Fixed light value, not --text-muted: this sits on the photo in both
+     themes, and the light theme's muted grey would vanish against it. */
+  color: rgba(238, 245, 240, 0.86);
+  max-width: 60ch;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+}
+
+/* The eyebrow and secondary button also sit on the photo, so they get their own
+   fixed-light treatment rather than the theme's surface colours. */
+.eyebrow--onPhoto {
+  border-color: rgba(20, 221, 69, 0.45);
+  background: rgba(8, 12, 10, 0.55);
+  color: #5cf07f;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.btn--onPhoto {
+  background: rgba(240, 245, 242, 0.10);
+  border-color: rgba(240, 245, 242, 0.30);
+  color: #f0f5f2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@media (hover: hover) {
+  .btn--onPhoto:hover:not(:disabled) {
+    background: rgba(8, 12, 10, 0.72);
+    border-color: #14dd45;
+    /* Fixed bright green, not --brand: in light mode --brand is the dark
+       forest green and this button sits on a dark photograph. */
+    color: #5cf07f;
+    transform: translateY(-1px);
+  }
 }
 
 .hero__actions {
-  margin-top: 34px;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 18px 24px;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
 }
 
-.hero__primary {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hero__both {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
-.hero__hint {
-  font-size: 13px;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.hero__alt-link {
+.hero__meta {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  color: var(--text-secondary);
-  font-size: 15px;
-  border-bottom: 1px solid transparent;
-  transition: color var(--duration-fast) var(--ease-out);
+  gap: var(--sp-2);
+  color: rgba(238, 245, 240, 0.62);
+  font-size: var(--fs-sm);
+}
+.hero__meta svg { flex: none; }
+
+.hero__assurances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3) var(--sp-6);
+  list-style: none;
+  margin-top: var(--sp-1);
 }
 
-.hero__alt-link:hover {
-  color: var(--accent);
-  text-decoration: none;
-  border-bottom-color: var(--accent-border);
+.hero__assurances li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: rgba(238, 245, 240, 0.82);
+  font-size: var(--fs-sm);
 }
 
-.hero__note {
-  margin-top: 26px;
-  font-size: 14px;
-  color: var(--text-muted);
+.hero__assurances svg {
+  flex: none;
+  color: var(--brand);
 }
+/* In light mode --brand is the dark forest green, which disappears on the
+   photo; the tick keeps the bright green there. */
+[data-theme="light"] .hero__assurances svg,
+[data-theme="light"] .hero__accent { --brand: #14dd45; }
 
-.hero__visual {
-  display: grid;
-  place-items: center;
-  position: relative;
-}
+/* --- Narrow layouts ------------------------------------------------------ */
 
-/* Ambient bloom behind the mark, echoing the app's --shadow-logo. */
-.hero__visual::before {
-  content: "";
-  position: absolute;
-  width: min(78%, 380px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--accent-glow), transparent 68%);
-  filter: blur(46px);
-  z-index: 0;
-}
-
-.hero__mark {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 400px);
-  animation: hero-float 7s var(--ease-out) infinite alternate;
-}
-
-.hero__screenshot {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-default);
-  box-shadow: var(--shadow-card);
-}
-
-@keyframes hero-float {
-  from {
-    transform: translateY(-6px);
-  }
-  to {
-    transform: translateY(6px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero__mark {
-    animation: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .hero__inner {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
-  .hero__description {
-    margin-inline: auto;
-  }
-
-  .hero__actions {
-    justify-content: center;
-  }
-
-  /* The mark leads on narrow screens; the copy follows it. */
-  .hero__visual {
-    order: -1;
-  }
-
-  .hero__mark {
-    width: min(72%, 300px);
-  }
-}
-
-@media (max-width: 560px) {
-  .hero__actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .hero__both {
-    flex-direction: column;
-  }
-
-  .hero__alt-link {
-    justify-content: center;
-  }
+@media (max-width: 640px) {
+  .hero { min-height: 0; }
+  .hero__actions { width: 100%; }
+  .hero__actions .btn { flex: 1 1 100%; }
+  .hero__assurances { gap: var(--sp-2); flex-direction: column; }
 }

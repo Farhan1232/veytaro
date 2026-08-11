@@ -1,23 +1,52 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Veytaro — Football Manager Assistant für Windows und macOS</title>
+    <title>Veytaro — Dein Spielstand. Klar analysiert.</title>
     <meta
       name="description"
-      content="Veytaro liest Football-Manager-Spielstände und erkennt Verein, Wettbewerb und Saison. Offizieller Download für Windows 10/11 und macOS."
+      content="Veytaro ist eine Desktop-Anwendung für Windows und macOS, die unterstützte Football-Manager-Spielstände lokal und schreibgeschützt ausliest und Verein, Wettbewerb und Saison anzeigt."
     />
     <link rel="canonical" href="https://veytaro.app/" />
     <meta name="robots" content="index, follow" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#08090b" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#07111f" />
 
-    <!-- Icons -->
-    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <!--
+      Theme bootstrap.
+
+      This runs before the stylesheet is applied and before React mounts, so the
+      saved preference is on <html> at first paint and a returning visitor with
+      the light theme never sees a dark flash. It is inline and tiny on purpose:
+      an external file would be a blocking request in the critical path.
+
+      The storage key and the dark default are mirrored from src/lib/theme.ts —
+      change them in both places.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("veytaro-theme");
+          var theme = stored === "light" || stored === "dark" ? stored : "dark";
+          document.documentElement.setAttribute("data-theme", theme);
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", theme === "light" ? "#f5f7fa" : "#07111f");
+        } catch (e) {
+          /* Storage blocked — the dark default already on <html> stands. */
+        }
+      })();
+    </script>
+
+    <!--
+      Icons. The PNGs are declared first and the 69 kB multi-resolution
+      favicon.ico last, so a modern browser picks a 1–2 kB file and only an old
+      one that ignores type/sizes falls back to the .ico.
+    -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
@@ -26,13 +55,10 @@
     <meta property="og:site_name" content="Veytaro" />
     <meta property="og:locale" content="de_DE" />
     <meta property="og:url" content="https://veytaro.app/" />
-    <meta
-      property="og:title"
-      content="Veytaro — Football Manager Assistant für Windows und macOS"
-    />
+    <meta property="og:title" content="Veytaro — Dein Spielstand. Klar analysiert." />
     <meta
       property="og:description"
-      content="Veytaro liest Football-Manager-Spielstände und erkennt Verein, Wettbewerb und Saison. Offizieller Download für Windows 10/11 und macOS."
+      content="Desktop-Anwendung für Windows und macOS, die unterstützte Football-Manager-Spielstände lokal und schreibgeschützt ausliest."
     />
     <meta property="og:image" content="https://veytaro.app/og-image.png" />
     <meta property="og:image:width" content="1200" />
@@ -40,13 +66,10 @@
     <meta property="og:image:alt" content="Veytaro" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta
-      name="twitter:title"
-      content="Veytaro — Football Manager Assistant für Windows und macOS"
-    />
+    <meta name="twitter:title" content="Veytaro — Dein Spielstand. Klar analysiert." />
     <meta
       name="twitter:description"
-      content="Veytaro liest Football-Manager-Spielstände und erkennt Verein, Wettbewerb und Saison. Offizieller Download für Windows 10/11 und macOS."
+      content="Desktop-Anwendung für Windows und macOS, die unterstützte Football-Manager-Spielstände lokal und schreibgeschützt ausliest."
     />
     <meta name="twitter:image" content="https://veytaro.app/og-image.png" />
 
@@ -61,7 +84,7 @@
         "@type": "SoftwareApplication",
         "name": "Veytaro",
         "applicationCategory": "UtilitiesApplication",
-        "description": "Desktop-Anwendung, die Football-Manager-26-Spielstände ausschließlich lesend auswertet und den verwalteten Verein, den aktuellen Wettbewerb und die Saison ermittelt.",
+        "description": "Desktop-Anwendung, die unterstützte Football-Manager-Spielstände ausschließlich lesend auswertet und den verwalteten Verein, den aktuellen Wettbewerb und die Saison ermittelt.",
         "operatingSystem": "Windows 10, Windows 11, macOS 11",
         "softwareVersion": "0.1.0",
         "url": "https://veytaro.app/",

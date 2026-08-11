@@ -1,0 +1,223 @@
+/* Shared layout for the four inner pages. The home page has its own sections
+   and does not use anything here. */
+
+.page-intro {
+  position: relative;
+  padding: clamp(40px, 6vw, 72px) 0 clamp(28px, 4vw, 40px);
+  overflow: hidden;
+}
+
+.page-intro::before {
+  content: "";
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 420px;
+  background: var(--hero-glow);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page-intro__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+}
+
+/* --- Photographic variant -------------------------------------------------
+   Same treatment as the home page hero: the copy sits on fixed light colours
+   because the photograph behind it is dark in both themes. */
+
+.page-intro--photo {
+  isolation: isolate;
+  margin-top: calc(var(--header-h) * -1);
+  padding-top: calc(var(--header-h) + clamp(40px, 6vw, 72px));
+  padding-bottom: clamp(36px, 5vw, 56px);
+}
+
+.page-intro--photo::before { display: none; }
+
+.page-intro__media,
+.page-intro__media img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.page-intro__media img { object-fit: cover; object-position: 50% 50%; }
+
+.page-intro__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      95deg,
+      rgba(6, 12, 9, 0.92) 0%,
+      rgba(6, 12, 9, 0.80) 40%,
+      rgba(6, 12, 9, 0.52) 100%
+    ),
+    linear-gradient(180deg, rgba(6, 12, 9, 0.55) 0%, rgba(6, 12, 9, 0) 30%),
+    linear-gradient(0deg, rgba(6, 12, 9, 0.6) 0%, rgba(6, 12, 9, 0) 26%);
+}
+
+.page-intro--photo h1 { color: #f0f5f2; }
+.page-intro--photo .lede { color: rgba(238, 245, 240, 0.84); }
+.page-intro--photo .eyebrow {
+  border-color: rgba(20, 221, 69, 0.45);
+  background: rgba(8, 12, 10, 0.55);
+  color: #5cf07f;
+}
+
+/* --- Prose ----------------------------------------------------------------
+   Long-form body copy. Deliberately narrow: ~70 characters a line is where
+   German text stays comfortable to read. */
+
+.prose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  padding-bottom: var(--section-gap);
+}
+
+.prose__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.prose__block h2 { font-size: var(--fs-h2); }
+.prose__block h3 { font-size: var(--fs-h3); }
+
+.prose__block p,
+.prose__block li {
+  color: var(--text-muted);
+  max-width: 70ch;
+}
+
+.prose__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-left: var(--sp-5);
+  list-style: disc;
+}
+
+.prose__list li::marker { color: var(--brand); }
+
+/* A bordered aside used for notes and callouts inside prose. */
+.prose__note {
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* --- Table of contents --------------------------------------------------- */
+
+.toc {
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.toc h2 {
+  margin-bottom: var(--sp-3);
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.toc ol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-left: var(--sp-5);
+}
+
+.toc li { color: var(--text-subtle); }
+.toc a { font-size: var(--fs-sm); }
+
+/* --- Contact ------------------------------------------------------------- */
+
+.contact-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  padding: var(--sp-6);
+}
+
+.contact-card__address {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+.contact-card__address svg { flex: none; color: var(--brand); }
+
+/* --- Not found ----------------------------------------------------------- */
+
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  padding: clamp(64px, 12vh, 140px) 0 var(--section-gap);
+}
+
+/* --- About: audience cards ----------------------------------------------- */
+
+.about-audience {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  list-style: none;
+}
+
+.about-audience__item {
+  display: flex;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+}
+
+.about-audience__item h3 {
+  margin-bottom: var(--sp-1);
+  font-size: var(--fs-base);
+}
+
+.about-audience__item p {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.about-audience__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background: var(--brand-soft);
+  color: var(--brand);
+}

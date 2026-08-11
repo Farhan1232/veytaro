@@ -1,0 +1,65 @@
+.codeblock {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+  overflow: hidden;
+}
+
+.codeblock__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.codeblock__label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.codeblock__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+  height: 30px;
+  padding: 0 var(--sp-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-subtle);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--duration) var(--ease-out),
+    background-color var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .codeblock__copy:hover {
+    color: var(--text);
+    background: var(--surface-3);
+    border-color: var(--border-strong);
+  }
+}
+
+.codeblock__copy.is-copied { color: var(--brand); border-color: var(--brand-border); }
+.codeblock__copy svg { flex: none; }
+
+.codeblock__pre {
+  margin: 0;
+  padding: var(--sp-4);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.75;
+  /* Wrap instead of scroll — see the component comment. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

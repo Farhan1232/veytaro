@@ -1,82 +1,225 @@
 /*
-  Design tokens mirrored from the desktop application
-  (scoutiq/src/styles/tokens.css and themes.css) so the download page and the
-  product it ships look like one system. Values are copied, not re-invented —
-  if the app's palette moves, update it here too.
+  Design tokens — the single source of truth for colour, type, space, radius,
+  shadow and motion across the site.
 
-  The app defaults to its dark theme and the brand mark is built for a dark
-  surface, so the site commits to dark only.
+  The palette is taken from the product's own mark: a vivid pure green on black,
+  with silver highlights. That green is the accent throughout, over a dark
+  charcoal ground with a faint green cast — the register football-management
+  software is normally presented in, and the setting the brand mark was drawn
+  for.
+
+  Two themes ship. Dark is the default on a first visit; the choice is stored in
+  localStorage and re-applied by an inline script in index.html before first
+  paint, so the page never flashes the wrong theme.
+
+  Every colour is declared on :root (dark) and overridden wholesale in
+  [data-theme="light"]. Components only reference semantic names (--surface,
+  --text, --brand …), never a raw hex value, so a palette change happens here
+  and nowhere else.
 */
 
 :root {
   color-scheme: dark;
 
-  /* Brand accent — identical to the app's --brand-accent. */
-  --accent: #39ff67;
-  --accent-hover: #4dff78;
-  --accent-soft: rgba(57, 255, 103, 0.12);
-  --accent-softer: rgba(57, 255, 103, 0.06);
-  --accent-glow: rgba(57, 255, 103, 0.22);
-  --accent-border: rgba(57, 255, 103, 0.28);
-  --accent-ring: rgba(57, 255, 103, 0.25);
-  --accent-ambient: rgba(57, 255, 103, 0.07);
-  --info-ambient: rgba(107, 163, 255, 0.05);
+  /* --- Brand ------------------------------------------------------------
+     Sampled from veytaro-mark.png, which is pure hue-120 green at full
+     saturation. Held at ~48% lightness: bright enough to read as the logo,
+     dark enough that it is not the glare the raw #00CC00 would be.
 
-  /* Surfaces */
-  --bg-base: #08090b;
-  --bg-shell: #0c0e11;
-  --bg-elevated: #111316;
-  --bg-surface: #15181d;
-  --bg-surface-hover: #1a1e25;
-  --bg-muted: #1e232b;
-  --bg-overlay-02: rgba(255, 255, 255, 0.02);
-  --bg-overlay-04: rgba(255, 255, 255, 0.04);
-  --bg-overlay-08: rgba(255, 255, 255, 0.08);
+     One value serves two roles, which is what makes the green workable —
+     it clears 11:1 as text on the dark ground *and* takes near-black ink at
+     11:1 when used as a filled button. */
+  --brand: #14dd45;
+  --brand-hover: #35e962;
+  --brand-active: #0fc23a;
+  /* Ink on a filled brand surface. Near-black, not white: white on this green
+     is 1.7:1 and unreadable. */
+  --brand-contrast: #04140a;
 
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.12);
-
-  /* Text — contrast against --bg-base is verified in website/README.md */
-  --text-primary: #f4f6f8;
-  --text-secondary: #b3bcc7;
-  --text-muted: #8a94a1;
-  --text-inverse: #0a0b0d;
-
+  --lime: #8ef04f;            /* secondary accent, gradients and diagrams */
+  --success: #14dd45;         /* same green — "verified" is the brand state */
   --warning: #f5b84c;
+  --danger: #ff6b6b;
 
-  /* Radii — the app's scale */
+  /* Translucent brand washes. Kept low so nothing glows. */
+  --brand-soft: rgba(20, 221, 69, 0.13);
+  --brand-softer: rgba(20, 221, 69, 0.06);
+  --brand-border: rgba(20, 221, 69, 0.30);
+  --brand-ring: rgba(20, 221, 69, 0.45);
+  --lime-soft: rgba(142, 240, 79, 0.13);
+  --success-soft: rgba(20, 221, 69, 0.13);
+  --warning-soft: rgba(245, 184, 76, 0.13);
+
+  /* --- Surfaces ---------------------------------------------------------
+     Charcoal with a slight green cast, so the accent sits in the same family
+     as the ground instead of on top of it. */
+  --bg: #080c0a;              /* page */
+  --surface: #0d1310;         /* alternating sections, footer */
+  --surface-2: #131b17;       /* cards */
+  --surface-3: #1b251f;       /* hovered cards, inset panels */
+  --surface-inset: #0a100d;   /* code blocks, checksum wells */
+  --header-bg: rgba(8, 12, 10, 0.82);
+
+  /* --- Text ------------------------------------------------------------- */
+  --text: #f0f5f2;
+  --text-muted: #9fb2a7;
+  --text-subtle: #7d9187;
+  --text-inverse: #080c0a;
+
+  /* --- Lines ------------------------------------------------------------ */
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.17);
+
+  /* --- Elevation --------------------------------------------------------
+     Two layers: a tight contact shadow plus a wider ambient one. Reads as
+     depth without the large blur that makes a page look cheap. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4), 0 10px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.45), 0 20px 44px rgba(0, 0, 0, 0.5);
+  /* Used where the green itself should feel lit, e.g. the primary button. */
+  --glow: 0 0 0 1px rgba(20, 221, 69, 0.18), 0 8px 26px rgba(20, 221, 69, 0.16);
+
+  /* Ambient wash behind the hero and page banners. */
+  --hero-glow: radial-gradient(
+      760px 420px at 14% 6%,
+      rgba(20, 221, 69, 0.15),
+      transparent 62%
+    ),
+    radial-gradient(680px 380px at 86% 0%, rgba(142, 240, 79, 0.09), transparent 60%);
+
+  /* Scrim laid over photography so text stays legible on top of it. */
+  --photo-scrim: linear-gradient(
+    180deg,
+    rgba(8, 12, 10, 0.35) 0%,
+    rgba(8, 12, 10, 0.72) 55%,
+    rgba(8, 12, 10, 0.94) 100%
+  );
+
+  /* --- Radii ------------------------------------------------------------ */
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  --radius-md: 10px;   /* buttons, inputs */
+  --radius-lg: 14px;   /* cards */
+  --radius-xl: 20px;   /* large panels */
   --radius-pill: 999px;
 
-  /* Typography — self-hosted, see main.tsx */
+  /* --- Typography -------------------------------------------------------
+     Self-hosted; see main.tsx. No CDN request on load. */
   --font-sans: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Sora", var(--font-sans);
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  /* Motion */
+  --fs-hero: clamp(2.1rem, 1.4rem + 3.1vw, 3.75rem);
+  --fs-h1: clamp(1.85rem, 1.35rem + 2.1vw, 2.85rem);
+  --fs-h2: clamp(1.5rem, 1.22rem + 1.25vw, 2.1rem);
+  --fs-h3: clamp(1.15rem, 1.06rem + 0.42vw, 1.4rem);
+  --fs-lg: 1.0625rem;
+  --fs-base: 1rem;
+  --fs-sm: 0.9375rem;
+  --fs-xs: 0.8125rem;
+
+  /* --- Space (8px system) ----------------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 48px;
+  --sp-10: 64px;
+  --sp-11: 80px;
+
+  /* --- Motion ----------------------------------------------------------- */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --duration-fast: 140ms;
-  --duration: 220ms;
+  --duration: 200ms;
 
-  /* Elevation */
-  --shadow-card: 0 12px 28px rgba(0, 0, 0, 0.28);
-  --shadow-button-primary:
-    0 0 0 1px var(--accent-ring), 0 8px 20px rgba(57, 255, 103, 0.15);
-  --shadow-logo: 0 0 24px rgba(57, 255, 103, 0.12);
+  /* --- Controls --------------------------------------------------------- */
+  --control-h: 44px;          /* meets the 44px touch-target guidance */
+  --control-h-lg: 52px;
 
-  /* Layout */
-  --page-max: 1120px;
-  --page-gutter: 24px;
-  --section-gap: clamp(64px, 9vw, 120px);
+  /* --- Layout -----------------------------------------------------------
+     1200px holds a three-column card grid at a comfortable card width without
+     the copy running to uncomfortable line lengths; prose is capped separately
+     by .container--narrow. */
+  --page-max: 1200px;
+  --page-gutter: 28px;
+  --section-gap: clamp(64px, 9vw, 112px);
+  --header-h: 68px;
+}
+
+/* ==========================================================================
+   Light theme
+
+   The same hue, inverted in role. A vivid green on white is 1.7:1 and unusable
+   for text or as a white-text button, so light mode uses a deep forest green
+   for anything carrying a letter, and keeps the bright green only for fills
+   and rules where the 3:1 non-text bar applies.
+   ========================================================================== */
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --brand: #0a7d31;           /* 5.6:1 as text on white, 4.9:1 on the page bg */
+  --brand-hover: #08682a;
+  --brand-active: #065420;
+  --brand-contrast: #ffffff;
+
+  --lime: #3f8f14;
+  --success: #0a7d31;
+  --warning: #8f5508;
+  --danger: #c43d3d;
+
+  --brand-soft: rgba(10, 125, 49, 0.10);
+  --brand-softer: rgba(10, 125, 49, 0.05);
+  --brand-border: rgba(10, 125, 49, 0.28);
+  --brand-ring: rgba(10, 125, 49, 0.38);
+  --lime-soft: rgba(63, 143, 20, 0.12);
+  --success-soft: rgba(10, 125, 49, 0.11);
+  --warning-soft: rgba(164, 98, 10, 0.12);
+
+  --bg: #f4f7f5;
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #e9f0eb;
+  --surface-inset: #eef3f0;
+  --header-bg: rgba(244, 247, 245, 0.85);
+
+  --text: #0f1a14;
+  --text-muted: #46564d;
+  --text-subtle: #5e6f65;
+  --text-inverse: #ffffff;
+
+  --border: #dde5e0;
+  --border-strong: #c4d1c9;
+
+  --shadow-sm: 0 1px 2px rgba(15, 26, 20, 0.05), 0 2px 6px rgba(15, 26, 20, 0.05);
+  --shadow-md: 0 2px 4px rgba(15, 26, 20, 0.06), 0 10px 24px rgba(15, 26, 20, 0.08);
+  --shadow-lg: 0 4px 8px rgba(15, 26, 20, 0.07), 0 20px 44px rgba(15, 26, 20, 0.10);
+  --glow: 0 1px 2px rgba(15, 26, 20, 0.08), 0 8px 22px rgba(10, 125, 49, 0.16);
+
+  /* Much weaker: the opacity that reads as depth on a dark page reads as a
+     dirty smear on a near-white one. */
+  --hero-glow: radial-gradient(
+      760px 420px at 14% 6%,
+      rgba(10, 125, 49, 0.09),
+      transparent 62%
+    ),
+    radial-gradient(680px 380px at 86% 0%, rgba(63, 143, 20, 0.07), transparent 60%);
+
+  /* Photography keeps a dark scrim in both themes — the images are dark, and
+     inverting the scrim would leave white text on a light wash. */
+  --photo-scrim: linear-gradient(
+    180deg,
+    rgba(6, 15, 10, 0.42) 0%,
+    rgba(6, 15, 10, 0.72) 55%,
+    rgba(6, 15, 10, 0.92) 100%
+  );
 }
 
 @media (max-width: 600px) {
   :root {
-    --page-gutter: 20px;
+    --page-gutter: 18px;
   }
 }

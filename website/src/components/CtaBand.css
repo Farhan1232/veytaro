@@ -1,0 +1,84 @@
+.cta-band {
+  padding: clamp(48px, 6vw, 80px) 0;
+}
+
+.cta-band__inner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  padding: clamp(32px, 4.5vw, 56px);
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+/* --- Turf photograph ----------------------------------------------------- */
+
+.cta-band__media,
+.cta-band__media img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cta-band__media img { object-fit: cover; }
+
+/* The grass is bright and busy; this scrim is what makes the copy on top of it
+   readable, and it stays dark in both themes because the photo does. */
+.cta-band__inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+      100deg,
+      rgba(6, 14, 9, 0.94) 0%,
+      rgba(6, 14, 9, 0.80) 55%,
+      rgba(6, 14, 9, 0.62) 100%
+    ),
+    linear-gradient(0deg, rgba(20, 221, 69, 0.10), rgba(20, 221, 69, 0.10));
+}
+
+/* --- Copy ---------------------------------------------------------------- */
+
+.cta-band__copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+/* Fixed light values: this always sits on a dark photograph. */
+.cta-band__copy h2 { color: #f0f5f2; }
+
+.cta-band__copy p {
+  color: rgba(238, 245, 240, 0.82);
+  max-width: 52ch;
+}
+
+.cta-band__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  flex: none;
+}
+
+@media (max-width: 860px) {
+  .cta-band__inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-6);
+  }
+}
+
+@media (max-width: 560px) {
+  .cta-band__actions { width: 100%; }
+  .cta-band__actions .btn { flex: 1 1 100%; }
+}

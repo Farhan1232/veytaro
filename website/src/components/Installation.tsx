@@ -38,13 +38,13 @@ export function Installation() {
 
   return (
     <section className="section" id={t.id} aria-labelledby="install-heading">
-      <div className="page">
-        <div className="section__head reveal">
+      <div className="container">
+        <div className="section__head">
           <h2 id="install-heading">{t.heading}</h2>
           <p>{t.description}</p>
         </div>
 
-        <div className="install-grid reveal">
+        <div className="install-grid">
           <Steps platform="windows" data={t.windows} />
           <Steps platform="macos" data={t.macos} />
         </div>
