@@ -11,4 +11,10 @@
 # Real files — /downloads/*, /og-image.png, /favicon.ico and so on — are served
 # directly, because Cloudflare Pages matches assets on disk before it applies
 # these rules.
+#
+# There is deliberately no 404.html in the output. Cloudflare Pages serves such
+# a file for any unmatched path *in preference to* this rewrite, which sent
+# every deep link to a static 404 instead of the app. The application renders
+# its own 404 view for unknown routes and marks it noindex, so the static file
+# was redundant as well as harmful. Do not reintroduce one.
 /*    /index.html   200
