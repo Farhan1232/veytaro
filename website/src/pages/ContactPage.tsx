@@ -52,11 +52,6 @@ export function ContactPage() {
           <h2>{t.responseHeading}</h2>
           <p>{t.responseBody}</p>
         </section>
-
-        <section className="prose__block">
-          <h2>{t.noFormHeading}</h2>
-          <p>{t.noFormBody}</p>
-        </section>
       </div>
     </>
   );

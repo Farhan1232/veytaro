@@ -577,9 +577,6 @@ export const de: SiteContent = {
     responseHeading: "Antwortzeit",
     responseBody:
       "Veytaro wird als kleines Projekt neben anderen Aufgaben entwickelt. Anfragen werden gelesen und beantwortet, eine feste Reaktionszeit lässt sich aber nicht zusagen.",
-    noFormHeading: "Warum es hier kein Formular gibt",
-    noFormBody:
-      "Diese Website ist eine rein statische Seite ohne Server im Hintergrund, der Nachrichten entgegennehmen könnte. Ein Kontaktformular würde deshalb entweder gar nichts senden oder einen fremden Dienst einbinden — beides wäre schlechter als eine direkte E-Mail.",
   },
 
   notFound: {

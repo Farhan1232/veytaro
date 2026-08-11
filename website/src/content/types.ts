@@ -274,8 +274,6 @@ export interface SiteContent {
     checklist: string[];
     responseHeading: string;
     responseBody: string;
-    noFormHeading: string;
-    noFormBody: string;
   };
 
   notFound: {
