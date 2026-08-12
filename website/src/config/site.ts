@@ -24,7 +24,7 @@ export const SITE = {
  * only one the site shows. No phone number, no postal address and no social
  * profiles are claimed anywhere, because none exist.
  */
-export const SUPPORT_EMAIL = "Niclaskrieck@gmail.com";
+export const SUPPORT_EMAIL = "support@veytaro.app";
 
 /** `mailto:` with a subject line that is already useful in an inbox. */
 export const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(

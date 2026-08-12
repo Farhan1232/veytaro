@@ -4,7 +4,7 @@ import { content } from "../content";
 
 describe("support contact", () => {
   it("is the one address the project actually has", () => {
-    expect(SUPPORT_EMAIL).toBe("Niclaskrieck@gmail.com");
+    expect(SUPPORT_EMAIL).toBe("support@veytaro.app");
   });
 
   it("builds a mailto link with a useful subject", () => {

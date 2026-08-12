@@ -67,7 +67,7 @@
 
    Scoped to links inside the lists, never to `.site-footer__col a` as a whole:
    the support address is a direct child of a column, and `capitalize` breaks on
-   the "@" and "." word boundaries, turning it into Niclaskrieck@Gmail.Com. */
+   the "@" and "." word boundaries, turning it into Support@Veytaro.App. */
 .site-footer__col ul a {
   text-transform: capitalize;
 }
